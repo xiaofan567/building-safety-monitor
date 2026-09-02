@@ -96,6 +96,15 @@
             <artifactId>mysql-connector-j</artifactId>
             <version>${mysql.version}</version>
         </dependency>
+        <!-- Flyway 数据库版本管理 -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+        </dependency>
         <!-- SpringDoc OpenAPI (替代Swagger2) -->
         <dependency>
             <groupId>org.springdoc</groupId>
@@ -138,25 +147,25 @@
     </dependencies>
 
 
-    <build>
-        <plugins>
-            <!-- 确保有这个插件 -->
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.3.3</version> <!-- 使用与你Spring Boot版本匹配的插件版本 -->
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal> <!-- 这个目标会重新打包成可执行JAR -->
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <!-- 替换为你的主类全路径 -->
-                    <mainClass>com.qst.smartbuildings.Main</mainClass>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+<!--    <build>-->
+<!--        <plugins>-->
+<!--            &lt;!&ndash; 确保有这个插件 &ndash;&gt;-->
+<!--            <plugin>-->
+<!--                <groupId>org.springframework.boot</groupId>-->
+<!--                <artifactId>spring-boot-maven-plugin</artifactId>-->
+<!--                <version>3.3.3</version> &lt;!&ndash; 使用与你Spring Boot版本匹配的插件版本 &ndash;&gt;-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <goals>-->
+<!--                            <goal>repackage</goal> &lt;!&ndash; 这个目标会重新打包成可执行JAR &ndash;&gt;-->
+<!--                        </goals>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--                <configuration>-->
+<!--                    &lt;!&ndash; 替换为你的主类全路径 &ndash;&gt;-->
+<!--                    <mainClass>com.qst.smartbuildings.Main</mainClass>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+<!--        </plugins>-->
+<!--    </build>-->
 </project>

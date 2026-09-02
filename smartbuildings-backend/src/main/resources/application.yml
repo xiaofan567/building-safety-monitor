@@ -5,9 +5,17 @@ spring:
     url: jdbc:mysql://127.0.0.1:3306/db_build_safe?characterEncoding=utf8&useSSL=false&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&serverTimezone=Asia/Shanghai
     username: root
     password: 123456
-  redis:
-    host: localhost  # Redis 服务器地址
-    port: 6379       # 端口
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    encoding: UTF-8
+    # 本地已有数据但还没纳入 Flyway 管理时，改为 true 做基线；全新项目保持 false
+    baseline-on-migrate: false
+  data:
+    redis:
+      host: 192.168.100.129  # Redis 服务器地址
+      port: 6379             # 端口
+      password: 123456
   jackson:
     # 全局日期反序列化格式（前端传参格式）
     date-format: yyyy-MM-dd HH:mm:ss
