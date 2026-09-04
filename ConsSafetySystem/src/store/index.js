@@ -3,7 +3,7 @@ import { createStore } from 'vuex'
 export default createStore({
   state: () => ({
     role: localStorage.getItem('role') ? JSON.parse(localStorage.getItem('role')) : [],
-    user: '',
+    user: localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')) : '',
     token: localStorage.getItem('token') ? localStorage.getItem('token') : '',
     imgShowRoad: import.meta.env.VITE_APP_Address,  // 注意环境变量访问方式变化
     fileUploadRoad: import.meta.env.VITE_APP_Address,
@@ -22,6 +22,10 @@ export default createStore({
     setToken(state, value) {
       state.token = value
       localStorage.setItem('token', value)
+    },
+    setUserInfo(state, value) {
+      state.user = value
+      localStorage.setItem('userInfo', JSON.stringify(value))
     },
   },
   actions: {
