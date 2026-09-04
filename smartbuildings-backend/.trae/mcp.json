@@ -8,13 +8,29 @@
     },
     "mysql": {
       "command": "npx",
-            "args": ["-y","@modelcontextprotocol/server-mysql"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-mysql"
+      ],
       "env": {
         "MYSQL_HOST": "127.0.0.1",
         "MYSQL_PORT": "3306",
         "MYSQL_USER": "root",
         "MYSQL_PASS": "123456",
         "MYSQL_DB": "db_build_safe"
+      }
+    },
+    "API 文档": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "apifox-mcp-server@latest",
+        "--project=8796728"
+      ],
+      "env": {
+        "APIFOX_ACCESS_TOKEN": "afxp_bc6618EOFW1p1FTmum8Eb9BiFzbsqiHmTRVi"
       }
     }
   }

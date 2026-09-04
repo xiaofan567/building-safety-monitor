@@ -59,6 +59,12 @@ const service = axios.create({
 // 7. Request 拦截器（逻辑不变，仅优化条件判断写法）
 service.interceptors.request.use(
   (config) => {
+    // 注入鉴权 Token（登录后保存在 localStorage 的 token 中）
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers['Admin-Token'] = token
+    }
+
     // 判断是否为 JSON 类型请求头
     const isJsonType = config.headers['Content-Type']?.includes('application/json')
     if (!isJsonType) {

@@ -37,5 +37,8 @@ build/
 ### Trae IDE ###
 .trae/
 
+### Application Config ###
+src/main/resources/application.yml
+
 ### Mac OS ###
 .DS_Store
