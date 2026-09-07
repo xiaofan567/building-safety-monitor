@@ -139,6 +139,19 @@
             <artifactId>javacv-platform</artifactId>
             <version>1.5.10</version> <!-- 检查最新版本 -->
         </dependency>
+        <!-- Netty TCP 服务器（设备数据解析），版本由 Spring Boot 依赖管理统一控制 -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-handler</artifactId>
+        </dependency>
         <!--        用于请求AI图片识别服务-->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -6,6 +6,7 @@ import { ElMessage } from 'element-plus'
 import { logout } from '@/api/login'
 import MainPage from '@/views/MainPage.vue'
 import EquipmentType from '@/views/EquipmentType.vue'
+import DeviceSimulation from '@/views/DeviceSimulation.vue'
 
 const router = useRouter()
 const store = useStore()
@@ -32,6 +33,7 @@ const equipmentOptions = [
 const menuItems = [
   { key: 'dashboard', label: '监控总览', icon: 'overview', comp: 'MainPage' },
   { key: 'device', label: '设备管理', icon: 'device', comp: 'EquipmentType' },
+  { key: 'simulation', label: '设备模拟', icon: 'simulation', comp: 'DeviceSimulation' },
   { key: 'environment', label: '环境监控', icon: 'env', comp: 'MainPage' },
   { key: 'personnel', label: '人员安全', icon: 'person', comp: 'MainPage' },
   { key: 'alarm', label: '预警事件', icon: 'alarm', comp: 'MainPage' },
@@ -39,7 +41,7 @@ const menuItems = [
 ]
 
 const getCurrentComponent = computed(() => {
-  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType }
+  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation }
   return map[currentComponent.value] || MainPage
 })
 
