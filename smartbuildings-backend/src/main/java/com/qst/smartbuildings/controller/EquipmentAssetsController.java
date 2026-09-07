@@ -1,10 +1,12 @@
 package com.qst.smartbuildings.controller;
 
+import com.qst.smartbuildings.common.UpdateOperationEnum;
 import com.qst.smartbuildings.dto.EquipmentAssetsDeleteDTO;
 import com.qst.smartbuildings.entity.BPage;
 import com.qst.smartbuildings.entity.EquipmentAssets;
 import com.qst.smartbuildings.entity.Result;
 import com.qst.smartbuildings.service.EquipmentAssetsService;
+import com.qst.smartbuildings.tcpserver.handle.EquipmentAssetsDataProcessHandle;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -27,9 +29,12 @@ import java.util.Map;
 public class EquipmentAssetsController {
 
     private final EquipmentAssetsService equipmentAssetsService;
+    private final EquipmentAssetsDataProcessHandle dataProcessHandle;
 
-    public EquipmentAssetsController(EquipmentAssetsService equipmentAssetsService) {
+    public EquipmentAssetsController(EquipmentAssetsService equipmentAssetsService,
+                                     EquipmentAssetsDataProcessHandle dataProcessHandle) {
         this.equipmentAssetsService = equipmentAssetsService;
+        this.dataProcessHandle = dataProcessHandle;
     }
 
     @Operation(summary = "查询可选择的设备列表（状态为启用）")
@@ -50,13 +55,18 @@ public class EquipmentAssetsController {
     @PostMapping("/save")
     public Result<?> save(@Valid @RequestBody EquipmentAssets equipmentAssets) {
         equipmentAssetsService.saveAssets(equipmentAssets);
+        // 同步设备数据到TCP数据处理组件（内部根据开关状态自动判断新增/更新/删除）
+        dataProcessHandle.updateEquipmentAssets(equipmentAssets, UpdateOperationEnum.UPDATE);
         return Result.ok();
     }
 
     @Operation(summary = "删除设备")
     @PostMapping("/delete")
     public Result<?> delete(@Valid @RequestBody EquipmentAssetsDeleteDTO dto) {
+        // 删除前先查询出设备信息，用于同步删除TCP服务中的设备缓存
+        EquipmentAssets assets = equipmentAssetsService.getById(dto.getAssetId());
         equipmentAssetsService.delete(dto.getAssetId());
+        dataProcessHandle.updateEquipmentAssets(assets, UpdateOperationEnum.DELETE);
         return Result.ok();
     }
 
