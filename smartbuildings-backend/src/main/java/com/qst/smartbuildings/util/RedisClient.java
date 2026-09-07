@@ -2,6 +2,7 @@ package com.qst.smartbuildings.util;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -15,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 // 标记为组件，让 Spring 扫描并管理
 @Component
+//@ConditionalOnProperty(name = "spring.data.redis.host")
 public class RedisClient {
 
     // 注入 Spring 自动配置的 RedisTemplate

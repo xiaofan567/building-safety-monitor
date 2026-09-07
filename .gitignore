@@ -1,0 +1,13 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# OS
+.DS_Store
+
+# Temp files
+temp_*.txt
+git_info.txt

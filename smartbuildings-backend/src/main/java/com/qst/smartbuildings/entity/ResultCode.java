@@ -16,3 +16,4 @@ public interface ResultCode {
      */
     public String getMsg();
 }
+
