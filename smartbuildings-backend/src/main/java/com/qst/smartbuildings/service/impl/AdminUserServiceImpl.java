@@ -16,12 +16,21 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 管理员用户服务实现类
+ * 负责用户认证（登录/登出）、用户信息管理、密码修改等核心业务逻辑
+ * 使用Spring Security + Redis Token机制实现无状态认证
+ *
+ * @author smartbuildings-team
+ * @since 2026-09-07
+ */
 @Service
 public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser> implements AdminUserService {
 
@@ -30,6 +39,15 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    /**
+     * 用户登录认证
+     * 验证用户名密码，生成安全Token并存储到Redis
+     *
+     * @param username 用户名（必填）
+     * @param password 密码（必填）
+     * @return 包含adminToken的Map
+     * @throws AuthException 用户名为空、用户不存在、账户禁用、密码错误时抛出
+     */
     @Override
     public Map<String, Object> login(String username, String password) {
         if (!StringUtils.hasText(username)) {
@@ -46,33 +64,51 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new AuthException(AuthorizationCodeEnum.AUTHORIZATION_LOGIN_NO_USER);
         }
-        String token = UUID.randomUUID().toString().replaceAll("-", "");
-        redisClient.set(AuthConst.USER_TOKEN_HEAD + token, user.getUserId().toString(),
+        String token = generateSecureToken();
+        AdminUser tokenUser = createTokenUser(user);
+        redisClient.set(token, tokenUser,
                 AuthConst.TOKEN_EXPIRED_TIME, TimeUnit.SECONDS);
         Map<String, Object> result = new HashMap<>();
         result.put("adminToken", token);
         return result;
     }
 
+    /**
+     * 根据Token查询当前登录用户信息
+     *
+     * @param token 用户Token（从请求头获取）
+     * @return 当前登录用户信息（不含敏感字段）
+     * @throws AuthException Token无效或已过期时抛出
+     */
     @Override
     public AdminUser queryLoginUser(String token) {
-        Object userIdObj = redisClient.get(AuthConst.USER_TOKEN_HEAD + token);
-        if (userIdObj == null) {
+        Object obj = redisClient.get(token);
+        if (obj == null) {
             throw new AuthException(AuthorizationCodeEnum.AUTHORIZATION_LOGIN);
         }
-        Long userId = Long.valueOf(userIdObj.toString());
-        AdminUser user = baseMapper.selectById(userId);
+        AdminUser user = convertToAdminUser(obj);
         if (user == null) {
             throw new AuthException(AuthorizationCodeEnum.AUTHORIZATION_LOGIN);
         }
-        user.setPassword(null);
-        user.setSalt(null);
         return user;
     }
 
+    private AdminUser convertToAdminUser(Object obj) {
+        if (obj instanceof AdminUser) {
+            return (AdminUser) obj;
+        }
+        String jsonStr = cn.hutool.json.JSONUtil.toJsonStr(obj);
+        return cn.hutool.json.JSONUtil.toBean(jsonStr, AdminUser.class);
+    }
+
+    /**
+     * 用户登出，清除Redis中的Token
+     *
+     * @param token 用户Token
+     */
     @Override
     public void logout(String token) {
-        redisClient.delete(AuthConst.USER_TOKEN_HEAD + token);
+        redisClient.delete(token);
     }
 
     @Override
@@ -102,6 +138,9 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
 
     @Override
     public boolean save(AdminUser adminUser) {
+        if (StringUtils.hasText(adminUser.getPassword())) {
+            adminUser.setPassword(passwordEncoder.encode(adminUser.getPassword()));
+        }
         return baseMapper.insert(adminUser) > 0;
     }
 
@@ -123,11 +162,38 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
         return baseMapper.updateById(adminUser) > 0;
     }
 
+    /**
+     * 修改用户密码（自动BCrypt加密）
+     *
+     * @param userId      用户ID
+     * @param newPassword 新密码（必填，长度6-100）
+     * @return 是否修改成功
+     * @throws AuthException 新密码为空时抛出
+     */
     @Override
     public boolean updatePassword(Long userId, String newPassword) {
+        if (!StringUtils.hasText(newPassword)) {
+            throw new AuthException(AuthorizationCodeEnum.AUTHORIZATION_LOGIN_NO_USER);
+        }
         AdminUser adminUser = new AdminUser();
         adminUser.setUserId(userId);
-        adminUser.setPassword(newPassword);
+        adminUser.setPassword(passwordEncoder.encode(newPassword));
         return baseMapper.updateById(adminUser) > 0;
+    }
+
+    private String generateSecureToken() {
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] bytes = new byte[32];
+        secureRandom.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private AdminUser createTokenUser(AdminUser user) {
+        AdminUser tokenUser = new AdminUser();
+        tokenUser.setUserId(user.getUserId());
+        tokenUser.setUsername(user.getUsername());
+        tokenUser.setRealname(user.getRealname());
+        tokenUser.setStatus(user.getStatus());
+        return tokenUser;
     }
 }

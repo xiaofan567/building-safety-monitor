@@ -5,20 +5,28 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Collections;
 
 @Data
 @TableName("admin_user")
 @Schema(description = "管理员用户实体")
-public class AdminUser implements Serializable {
+public class AdminUser implements Serializable, UserDetails {
 
     private static final long serialVersionUID = 1L;
 
     @TableId(value = "user_id", type = IdType.AUTO)
     @Schema(description = "主键ID")
     private Long userId;
+
+    @Schema(description = "用户角色列表")
+    private transient Collection<String> roles;
 
     @Schema(description = "用户名")
     private String username;
@@ -76,4 +84,44 @@ public class AdminUser implements Serializable {
 
     @Schema(description = "项目ID")
     private Integer projectId;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (roles != null && !roles.isEmpty()) {
+            return roles.stream()
+                    .map(role -> new SimpleGrantedAuthority(role.startsWith("ROLE_") ? role : "ROLE_" + role))
+                    .toList();
+        }
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+
+    @Override
+    public String getPassword() {
+        return this.password;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.username;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return this.status != null && this.status == 1;
+    }
 }

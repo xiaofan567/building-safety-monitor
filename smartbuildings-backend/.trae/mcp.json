@@ -8,10 +8,7 @@
     },
     "mysql": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-mysql"
-      ],
+      "args": ["-y", "@modelcontextprotocol/server-mysql"],
       "env": {
         "MYSQL_HOST": "127.0.0.1",
         "MYSQL_PORT": "3306",
@@ -20,17 +17,17 @@
         "MYSQL_DB": "db_build_safe"
       }
     },
-    "API 文档": {
+    "建筑安全智能监控平台 - API 文档": {
       "command": "cmd",
       "args": [
         "/c",
         "npx",
         "-y",
         "apifox-mcp-server@latest",
-        "--project=8796728"
+        "--project-id=8796728"
       ],
       "env": {
-        "APIFOX_ACCESS_TOKEN": "afxp_bc6618EOFW1p1FTmum8Eb9BiFzbsqiHmTRVi"
+        "APIFOX_ACCESS_TOKEN": "afxp_972e6f9aCMxND3n6RApurUKDX1KJdidoc556"
       }
     }
   }
