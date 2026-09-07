@@ -18,6 +18,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { Server } from 'socket.io'
 import * as dataGenerators from './data-generators.js'
+import TcpDeviceClient from './tcp-client.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PORT = process.env.PORT || 3000
@@ -104,9 +105,21 @@ function saveConfig() {
 // ---------------- 事件推送 ----------------
 let io = null
 
+// 每个设备组对应一个真实 TCP 客户端（向后端 Netty 服务上报数据）
+const tcpClients = {}
+for (const group of Object.keys(GROUP_NAMES)) {
+  tcpClients[group] = new TcpDeviceClient(GROUP_NAMES[group])
+}
+
 function broadcastStatus(group, connected) {
   io.emit('connection_status', { group, connected })
   io.emit('server_response', { group, message: connected ? 'TCP 连接已建立' : 'TCP 连接已断开' })
+  // 同步真实 TCP 连接：设备组连接建立时连接后端 Netty，断开时关闭
+  if (connected) {
+    tcpClients[group].connect()
+  } else {
+    tcpClients[group].close()
+  }
 }
 
 function sendDeviceData(deviceId) {
@@ -114,6 +127,8 @@ function sendDeviceData(deviceId) {
   const data = generateData(deviceId)
   io.emit('data_sent', { deviceId, data, timestamp: new Date().toISOString() })
   io.emit('server_response', { group: dev.group, message: `已收到${dev.type}数据并转发` })
+  // 通过该设备组的真实 TCP 连接向后端 Netty 服务上报数据
+  tcpClients[dev.group].send(data)
 }
 
 function stopDevice(deviceId) {
