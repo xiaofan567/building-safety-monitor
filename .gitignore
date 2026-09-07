@@ -11,3 +11,10 @@
 # Temp files
 temp_*.txt
 git_info.txt
+
+# Review / docs temp files
+fix_summary_*.md
+review_result_*.md
+review_rules.md
+认证系统功能说明.md
+

@@ -6,21 +6,27 @@ import com.qst.smartbuildings.entity.BPage;
 import com.qst.smartbuildings.entity.EquipmentAssets;
 import com.qst.smartbuildings.entity.EquipmentLocation;
 import com.qst.smartbuildings.entity.EquipmentType;
+import com.qst.smartbuildings.entity.camera.Camera;
+import com.qst.smartbuildings.mapper.CameraMapper;
 import com.qst.smartbuildings.mapper.EquipmentAssetsMapper;
 import com.qst.smartbuildings.mapper.EquipmentLocationMapper;
 import com.qst.smartbuildings.mapper.EquipmentTypeMapper;
 import com.qst.smartbuildings.service.EquipmentAssetsService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.qst.smartbuildings.common.EquipmentTypeConst.CAMERA_TYPE_ID;
 
 /**
  * 设备资产管理服务实现
@@ -168,5 +174,44 @@ public class EquipmentAssetsServiceImpl
         if (equipmentAssets.getSort() == null) {
             equipmentAssets.setSort(0);
         }
+    }
+
+
+//新添加
+    @Autowired
+    private CameraMapper cameraMapper;
+    /**
+     * 重写保存方法
+     * @param entity
+     * @return
+     */
+    @Override
+    public boolean save(EquipmentAssets entity) {
+        boolean b = super.save(entity);
+        if(b && entity.getTypeId() != null && entity.getTypeId().intValue() == CAMERA_TYPE_ID.intValue()){
+            Camera camera = new Camera();
+            camera.setAssetId(entity.getAssetId() == null ? null : entity.getAssetId().intValue());
+            //默认状态为离线
+            camera.setStatus("0");
+            //默认启用
+            camera.setIsEnable("1");
+            //默认排序
+            camera.setSort(0);
+            cameraMapper.insert(camera);
+        }
+        return b;
+    }
+    /*
+     * 重写删除方法，后续有用
+     * */
+    @Override
+    public boolean removeById(Serializable id) {
+        EquipmentAssets equipmentAssets = getBaseMapper().selectById(id);
+        boolean b = super.removeById(id);
+        if(b && equipmentAssets != null && equipmentAssets.getTypeId() != null
+                && equipmentAssets.getTypeId().intValue() == CAMERA_TYPE_ID.intValue()){
+            cameraMapper.delete(new LambdaQueryWrapper<Camera>().eq(Camera::getAssetId, id));
+        }
+        return b;
     }
 }

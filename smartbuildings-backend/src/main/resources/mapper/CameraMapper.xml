@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qst.smartbuildings.mapper.CameraMapper">
+    <!-- 基础结果集映射 -->
+    <resultMap id="BaseResultMap" type="Camera">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="is_enable" property="isEnable" jdbcType="VARCHAR"/>
+        <result column="wvp_open_url" property="wvpOpenUrl" jdbcType="VARCHAR"/>
+        <result column="ai_monitor_type" property="aiMonitorType" jdbcType="VARCHAR"/>
+        <result column="sort" property="sort" jdbcType="INTEGER"/>
+        <result column="asset_id" property="assetId" jdbcType="INTEGER"/>
+        <result column="asset_name" property="assetName" jdbcType="VARCHAR"/>
+        <result column="asset_code" property="assetCode" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="location_id" property="locationId" jdbcType="INTEGER"/>
+        <result column="location_name" property="locationName" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 查询条件：匹配CameraBO的属性名 -->
+    <sql id="Query_Where_Clause">
+        <where>
+            <!-- 设备资产名称模糊查询 -->
+            <if test="data.assetName != null and data.assetName != ''">
+                AND ea.asset_name LIKE CONCAT('%', #{data.assetName}, '%')
+            </if>
+            <!-- 位置ID精确查询 -->
+            <if test="data.locationTypeId != null">
+                AND ea.location_id = #{data.locationTypeId}
+            </if>
+            <!-- 设备编号查询 -->
+            <if test="data.assetCode != null and data.assetCode != ''">
+                AND ea.asset_code LIKE CONCAT('%', #{data.assetCode}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <!-- 查询单个摄像头详情 -->
+    <select id="selectCameraById" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT
+            dc.*,
+            ea.asset_id,
+            ea.asset_name,
+            ea.asset_code,
+            ea.create_time,
+            ea.location_id,
+            el.location_name
+        FROM
+            device_camera dc
+                LEFT JOIN
+            equipment_assets ea ON dc.asset_id = ea.asset_id
+                LEFT JOIN
+            equipment_location el ON ea.location_id = el.location_id
+        WHERE
+            dc.id = #{id}
+    </select>
+
+    <!-- 分页查询摄像头列表：适配BPage和CameraBO参数 -->
+    <select id="selectByPage" resultMap="BaseResultMap">
+        SELECT
+        dc.*,
+        ea.asset_id,
+        ea.asset_name,
+        ea.asset_code,
+        ea.create_time,
+        ea.location_id,
+        el.location_name
+        FROM
+        device_camera dc
+        LEFT JOIN
+        equipment_assets ea ON dc.asset_id = ea.asset_id
+        LEFT JOIN
+        equipment_location el ON ea.location_id = el.location_id
+        <include refid="Query_Where_Clause"/>
+        ORDER BY
+        dc.sort ASC, dc.id DESC
+    </select>
+</mapper>
