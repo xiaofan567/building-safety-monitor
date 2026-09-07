@@ -22,6 +22,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/equipment-type',
+    name: 'EquipmentType',
+    component: () => import('../views/EquipmentType.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/login'
   }
