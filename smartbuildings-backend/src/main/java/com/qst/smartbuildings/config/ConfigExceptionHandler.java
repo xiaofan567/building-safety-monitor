@@ -32,11 +32,18 @@ public class ConfigExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // 处理其他未捕获的认证相关异常
+    // 处理参数校验/业务异常（如数据不存在、参数不合法）
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException e) {
+        ErrorResponse error = new ErrorResponse("400", e.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    // 处理其他未捕获的异常
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleAuthenticationException(Exception e) {
+    public ResponseEntity<ErrorResponse> handleException(Exception e) {
         ErrorResponse error = new ErrorResponse("500", "系统错误：" + e.getMessage());
-        return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     // 错误响应实体类

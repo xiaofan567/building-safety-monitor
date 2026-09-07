@@ -1,20 +1,27 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
-import { getDashboardStats, getEnvironmentRealtime, getSafetyHazards, getSprayRecords } from '@/api/dashboard'
+import { getDashboardStats, getEnvironmentRealtime, getSafetyHazards, getSprayRecords, getAlarmList, getDeviceOverview, getDeviceStatistics } from '@/api/dashboard'
 
 const stats = ref({})
 const envData = ref([])
 const hazardChartData = ref([])
 const sprinklerRecords = ref([])
+const alarmList = ref([])
+const deviceOverview = ref({})
+const deviceStatistics = ref([])
 
 const envChartRef = ref(null)
 const hazardChartRef = ref(null)
 const sprinklerChartRef = ref(null)
+const deviceOverviewChartRef = ref(null)
+const deviceStatsChartRef = ref(null)
 
 let envChartInstance = null
 let hazardChartInstance = null
 let sprinklerChartInstance = null
+let deviceOverviewChartInstance = null
+let deviceStatsChartInstance = null
 let resizeHandler = null
 
 const chartColors = {
@@ -210,10 +217,131 @@ function initSprinklerChart() {
   })
 }
 
+function initDeviceOverviewChart() {
+  if (!deviceOverviewChartRef.value) return
+  if (deviceOverviewChartInstance) deviceOverviewChartInstance.dispose()
+  deviceOverviewChartInstance = echarts.init(deviceOverviewChartRef.value)
+
+  const data = [
+    { value: 20, name: '塔吊', itemStyle: { color: '#1a73e8' } },
+    { value: 12, name: '升降机', itemStyle: { color: '#0d9e6c' } },
+    { value: 18, name: '传感器', itemStyle: { color: '#f5a623' } },
+    { value: 8, name: '喷淋设备', itemStyle: { color: '#0ea5e9' } },
+    { value: 6, name: '摄像头', itemStyle: { color: '#8b5cf6' } }
+  ]
+
+  deviceOverviewChartInstance.setOption({
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(15,29,46,0.95)',
+      borderColor: 'rgba(26,115,232,0.3)',
+      textStyle: { color: '#e8edf2', fontSize: 12 },
+      formatter: '{b}: {c} 台 ({d}%)'
+    },
+    legend: {
+      bottom: 0,
+      textStyle: { color: '#8899aa', fontSize: 10 },
+      itemWidth: 8,
+      itemHeight: 8,
+      itemGap: 12
+    },
+    series: [{
+      type: 'pie',
+      radius: ['50%', '72%'],
+      center: ['50%', '48%'],
+      avoidLabelOverlap: false,
+      itemStyle: {
+        borderRadius: 4,
+        borderColor: '#0f1d2e',
+        borderWidth: 3
+      },
+      label: {
+        show: false
+      },
+      emphasis: {
+        label: {
+          show: true,
+          fontSize: 14,
+          fontWeight: 'bold',
+          color: '#e8edf2'
+        },
+        scaleSize: 8
+      },
+      data: data
+    }]
+  })
+}
+
+function initDeviceStatsChart() {
+  if (!deviceStatsChartRef.value) return
+  if (deviceStatsChartInstance) deviceStatsChartInstance.dispose()
+  deviceStatsChartInstance = echarts.init(deviceStatsChartRef.value)
+
+  const types = ['塔吊', '升降机', '传感器', '喷淋', '摄像头']
+  const onlineData = [18, 10, 16, 7, 5]
+  const offlineData = [2, 2, 2, 1, 1]
+
+  deviceStatsChartInstance.setOption({
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(15,29,46,0.95)',
+      borderColor: 'rgba(26,115,232,0.3)',
+      textStyle: { color: '#e8edf2', fontSize: 12 }
+    },
+    legend: {
+      bottom: 0,
+      textStyle: { color: '#8899aa', fontSize: 11 },
+      itemWidth: 10,
+      itemHeight: 6,
+      itemGap: 20
+    },
+    grid: { top: 10, right: 16, bottom: 30, left: 36 },
+    xAxis: {
+      type: 'category',
+      data: types,
+      axisLine: { lineStyle: { color: chartColors.gridLine } },
+      axisTick: { show: false },
+      axisLabel: { color: chartColors.textDim, fontSize: 10 }
+    },
+    yAxis: {
+      type: 'value',
+      name: '台',
+      nameTextStyle: { color: chartColors.textDim, fontSize: 10 },
+      splitLine: { lineStyle: { color: chartColors.gridLine, type: 'dashed' } },
+      axisLabel: { color: chartColors.textDim, fontSize: 10 }
+    },
+    series: [
+      {
+        name: '在线',
+        type: 'bar',
+        data: onlineData,
+        barWidth: 14,
+        barGap: '30%',
+        itemStyle: {
+          borderRadius: [3, 3, 0, 0],
+          color: '#0d9e6c'
+        }
+      },
+      {
+        name: '离线',
+        type: 'bar',
+        data: offlineData,
+        barWidth: 14,
+        itemStyle: {
+          borderRadius: [3, 3, 0, 0],
+          color: '#e54545'
+        }
+      }
+    ]
+  })
+}
+
 function handleResize() {
   envChartInstance?.resize()
   hazardChartInstance?.resize()
   sprinklerChartInstance?.resize()
+  deviceOverviewChartInstance?.resize()
+  deviceStatsChartInstance?.resize()
 }
 
 async function fetchData() {
@@ -221,6 +349,9 @@ async function fetchData() {
   try { const res = await getEnvironmentRealtime(); if (res?.data) envData.value = res.data } catch(e) {}
   try { const res = await getSafetyHazards(); if (res?.data) hazardChartData.value = res.data } catch(e) {}
   try { const res = await getSprayRecords(); if (res?.data) sprinklerRecords.value = res.data } catch(e) {}
+  try { const res = await getAlarmList(); if (res?.data) alarmList.value = res.data } catch(e) {}
+  try { const res = await getDeviceOverview(); if (res?.data) deviceOverview.value = res.data } catch(e) {}
+  try { const res = await getDeviceStatistics(); if (res?.data) deviceStatistics.value = res.data } catch(e) {}
 }
 
 onMounted(() => {
@@ -229,6 +360,8 @@ onMounted(() => {
     initEnvChart()
     initHazardChart()
     initSprinklerChart()
+    initDeviceOverviewChart()
+    initDeviceStatsChart()
   }, 200)
   resizeHandler = handleResize
   window.addEventListener('resize', resizeHandler)
@@ -239,6 +372,8 @@ onUnmounted(() => {
   envChartInstance?.dispose()
   hazardChartInstance?.dispose()
   sprinklerChartInstance?.dispose()
+  deviceOverviewChartInstance?.dispose()
+  deviceStatsChartInstance?.dispose()
 })
 </script>
 
@@ -347,6 +482,40 @@ onUnmounted(() => {
           </div>
           <div ref="hazardChartRef" class="chart-container"></div>
         </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">预警事件列表</div>
+            <span class="panel-link">查看全部 →</span>
+          </div>
+          <div class="simple-table-wrap">
+            <table class="simple-table">
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>类型</th>
+                  <th>内容</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in alarmList.slice(0, 5)" :key="item.id">
+                  <td>{{ item.alertTime || item.createTime || '--' }}</td>
+                  <td>{{ item.alertType || '--' }}</td>
+                  <td>{{ item.alertContent || item.content || '--' }}</td>
+                  <td>
+                    <span class="tag" :class="item.alertStatus === '1' || item.handleState === '0' ? 'tag-red' : 'tag-green'">
+                      {{ item.alertStatus === '1' || item.handleState === '0' ? '未处理' : '已处理' }}
+                    </span>
+                  </td>
+                </tr>
+                <tr v-if="alarmList.length === 0">
+                  <td colspan="4" style="text-align:center;color:#5a6a7a;">暂无预警事件</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div class="grid-col-right">
@@ -359,6 +528,14 @@ onUnmounted(() => {
             </div>
           </div>
           <div ref="envChartRef" class="chart-container"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">设备状态总览</div>
+            <span class="panel-link">查看详情 →</span>
+          </div>
+          <div ref="deviceOverviewChartRef" class="chart-container chart-md"></div>
         </div>
 
         <div class="panel">
@@ -396,6 +573,14 @@ onUnmounted(() => {
             <span class="panel-link">查看详情 →</span>
           </div>
           <div ref="sprinklerChartRef" class="chart-container chart-sm"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">设备运行统计</div>
+            <span class="panel-link">查看详情 →</span>
+          </div>
+          <div ref="deviceStatsChartRef" class="chart-container chart-sm"></div>
         </div>
       </div>
     </div>
@@ -702,6 +887,10 @@ onUnmounted(() => {
 
 .chart-sm {
   height: 200px;
+}
+
+.chart-md {
+  height: 240px;
 }
 
 .simple-table-wrap {

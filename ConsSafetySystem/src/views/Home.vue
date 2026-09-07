@@ -1,11 +1,14 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
 import { logout } from '@/api/login'
 import MainPage from '@/views/MainPage.vue'
+import EquipmentType from '@/views/EquipmentType.vue'
 
 const router = useRouter()
+const store = useStore()
 const currentComponent = ref('MainPage')
 const activeMenu = ref('dashboard')
 
@@ -28,7 +31,7 @@ const equipmentOptions = [
 
 const menuItems = [
   { key: 'dashboard', label: '监控总览', icon: 'overview', comp: 'MainPage' },
-  { key: 'device', label: '设备管理', icon: 'device', comp: 'MainPage' },
+  { key: 'device', label: '设备管理', icon: 'device', comp: 'EquipmentType' },
   { key: 'environment', label: '环境监控', icon: 'env', comp: 'MainPage' },
   { key: 'personnel', label: '人员安全', icon: 'person', comp: 'MainPage' },
   { key: 'alarm', label: '预警事件', icon: 'alarm', comp: 'MainPage' },
@@ -36,7 +39,7 @@ const menuItems = [
 ]
 
 const getCurrentComponent = computed(() => {
-  const map = { 'MainPage': MainPage }
+  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType }
   return map[currentComponent.value] || MainPage
 })
 
@@ -54,6 +57,8 @@ async function handleLogout() {
   } catch (e) {
     // ignore
   }
+  store.commit('setToken', '')
+  store.commit('setUserInfo', '')
   localStorage.removeItem('token')
   localStorage.removeItem('userInfo')
   ElMessage.success('已退出登录')
