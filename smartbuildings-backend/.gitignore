@@ -38,7 +38,9 @@ build/
 .trae/
 
 ### Application Config ###
-src/main/resources/application.yml
+# application.yml 纳入版本管理，不再 ignore
+# 本机环境敏感配置单独存放，不纳入版本管理
+application-env.yml
 
 ### Mac OS ###
 .DS_Store
