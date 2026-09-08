@@ -1,0 +1,27 @@
+# 核心框架
+flask==2.3.3
+tensorflow==2.15.0  # 2.10不支持Python3.11；2.15为最后一个内置Keras2的版本，兼容旧h5模型（Windows下为CPU版）
+torch==2.0.1  # 避免2.6+的安全限制问题，使用稳定版（支持Python3.11）
+torchvision==0.15.2  # 与torch 2.0.1匹配（0.15.1仅兼容torch 2.0.0），ultralytics依赖
+ultralytics==8.0.196
+
+# ModelScope及依赖（damoyolo检测走modelscope内置实现，无需mmdet/mmcv-full）
+modelscope==1.4.2
+timm==1.0.28  # 0.6.12的maxxvit.py在Python3.11下dataclass可变默认值报错，需1.0.x修复
+easydict==1.10
+
+# 数据处理与图像
+numpy==1.23.5  # modelscope要求<1.24，TensorFlow 2.15要求<2.0
+opencv-python==4.8.0.76
+pandas==1.5.3
+Pillow==9.5.0
+dill==0.3.6  # 模型序列化依赖
+
+# Flask依赖
+werkzeug==2.3.8  # 与Flask 2.3.3兼容
+
+# 补充依赖
+pyarrow==12.0.1  # 解决datasets库的序列化问题
+scikit-learn==1.6.1
+scipy==1.11.4  # 锁版本，避免最新版与numpy 1.x冲突
+matplotlib==3.7.5  # 锁版本，ultralytics依赖且与numpy 1.x兼容
