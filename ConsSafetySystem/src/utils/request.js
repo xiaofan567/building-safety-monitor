@@ -114,6 +114,9 @@ service.interceptors.response.use(
 
     // 处理 JSON 响应（状态码非 0 时抛错）
     const res = response.data
+    if (res === null || res === undefined) {
+      return Promise.reject(new Error('响应数据为空'))
+    }
     if (res.code !== 0) {
       // 302：登录失效（异地登录/Token过期）
       if (res.code === 302) {

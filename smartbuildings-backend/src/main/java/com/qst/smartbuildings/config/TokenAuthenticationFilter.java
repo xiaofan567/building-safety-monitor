@@ -1,5 +1,6 @@
 package com.qst.smartbuildings.config;
 
+import cn.hutool.json.JSONUtil;
 import com.qst.smartbuildings.common.AuthConst;
 import com.qst.smartbuildings.util.RedisClient;
 import jakarta.servlet.FilterChain;
@@ -42,11 +43,12 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
             String token = request.getHeader(AuthConst.TOKEN_NAME);
             if (StringUtils.hasText(token)) {
-                Object userId = redisClient.get(AuthConst.USER_TOKEN_HEAD + token);
-                if (userId != null) {
+                Object stored = redisClient.get(AuthConst.USER_TOKEN_HEAD + token);
+                if (stored != null) {
+                    String principal = JSONUtil.parseObj(stored).getStr("userId");
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
-                                    userId.toString(), null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+                                    principal, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }

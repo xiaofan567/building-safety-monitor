@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qst.smartbuildings.mapper.AiAlertMapper">
+
+    <select id="selectPage" resultType="AiAlert">
+        select a.*,e.asset_name as assetName,e.asset_code as code,l.location_name as locationName from ai_alert a
+        left join equipment_assets e on a.equipment_id = e.asset_id
+        left join equipment_location l on e.location_id = l.location_id
+        <where>
+            <!-- 设备资产编码查询条件 -->
+            <if test="data.assetCode != null and data.assetCode != ''">
+                and e.asset_code like concat('%', #{data.assetCode}, '%')
+            </if>
+            <!-- 告警类型查询条件 -->
+            <if test="data.alertType != null and data.alertType != ''">
+                and a.alert_type like concat('%', #{data.alertType}, '%')
+            </if>
+            <!-- 告警状态查询条件 -->
+            <if test="data.alertStatus != null and data.alertStatus != ''">
+                and a.alert_status = #{data.alertStatus}
+            </if>
+            <!-- 时间范围查询条件 - 开始时间 -->
+            <if test="data.startTime != null and data.startTime != ''">
+                and a.alert_time &gt;= #{data.startTime}
+            </if>
+            <!-- 时间范围查询条件 - 结束时间 -->
+            <if test="data.endTime != null and data.endTime != ''">
+                and a.alert_time &lt;= #{data.endTime}
+            </if>
+        </where>
+        order by a.alert_time desc
+    </select>
+    <select id="getAiAlertById" resultType="AiAlert">
+        select a.*,e.asset_name as assetName,e.asset_code as code,l.location_name as locationName from ai_alert a
+                                                                                                           left join equipment_assets e on a.equipment_id = e.asset_id
+                                                                                                           left join equipment_location l on e.location_id = l.location_id
+        where a.id = #{id}
+    </select>
+
+</mapper>
