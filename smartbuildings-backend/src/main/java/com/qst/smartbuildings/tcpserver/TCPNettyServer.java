@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qst.smartbuildings.entity.data.DeviceReportDTO;
 import com.qst.smartbuildings.tcpserver.handle.DeviceDataProcessHandle;
+//import com.qst.smartbuildings.tcpserver.handle.EnvironmentDataProcessHandle;
 import com.qst.smartbuildings.tcpserver.handle.EquipmentAssetsDataProcessHandle;
 import com.qst.smartbuildings.tcpserver.handle.TowerDataProcessHandle;
 import io.netty.bootstrap.ServerBootstrap;
@@ -25,6 +26,7 @@ import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -63,6 +65,18 @@ public class TCPNettyServer {
     private static final int LENGTH_FIELD_LENGTH = 4;
     private static final int LENGTH_ADJUSTMENT = 0;
     private static final int INITIAL_BYTES_TO_STRIP = 4;
+
+//    @Autowired
+//    private EnvironmentDataProcessHandle environmentDataProcessHandle;
+//    /**
+//     * 服务器启动方法，使用@PostConstruct注解确保在当前Bean初始化完成后自动执行
+//     */
+//    @PostConstruct
+//    public void startServer() {
+//        handleList.add(towerDataProcessHandle);
+//        handleList.add(elevatorInfoDataProcessHandle);
+//        handleList.add(environmentDataProcessHandle);
+//    }
 
     public TCPNettyServer(@Value("${device.tcp.port:8888}") int tcpPort,
                           TCPClientPool tcpClientPool,
