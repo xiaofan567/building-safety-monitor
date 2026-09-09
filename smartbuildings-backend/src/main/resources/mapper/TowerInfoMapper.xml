@@ -24,6 +24,25 @@
         WHERE eq.type_id = #{typeId}
     </select>
 
+    <!-- 查询全部塔机信息列表：联表补充平台设备标识（用于数据处理组件内存初始化） -->
+    <select id="getTowerList" resultType="com.qst.smartbuildings.entity.TowerInfo">
+        SELECT
+            ti.id,
+            ti.asset_id,
+            ti.forward_arm_length,
+            ti.backward_arm_length,
+            ti.max_height,
+            ti.rated_load,
+            ti.max_load,
+            ti.rated_moment,
+            ti.create_time,
+            ti.update_time,
+            eq.asset_name,
+            eq.platform_eq_code
+        FROM equipment_assets eq
+        INNER JOIN tower_info ti ON ti.asset_id = eq.asset_id
+    </select>
+
     <!-- 查询塔吊今日工作状态聚合 -->
     <select id="selectTowerWorkInfo" resultType="com.qst.smartbuildings.entity.TowerWorkInfoVO">
         SELECT

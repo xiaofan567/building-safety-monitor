@@ -22,6 +22,11 @@ public interface TowerInfoMapper extends BaseMapper<TowerInfo> {
     List<TowerInfo> selectAllTower(@Param("typeId") Long typeId);
 
     /**
+     * 查询全部塔机信息列表（联表补充平台设备标识，用于数据处理组件内存初始化）
+     */
+    List<TowerInfo> getTowerList();
+
+    /**
      * 查询塔吊今日工作状态聚合
      */
     TowerWorkInfoVO selectTowerWorkInfo(@Param("assetId") Long assetId);
