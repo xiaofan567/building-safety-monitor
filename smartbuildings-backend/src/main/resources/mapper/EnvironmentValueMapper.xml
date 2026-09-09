@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qst.smartbuildings.mapper.EnvironmentValueMapper">
+    <select id="getRealTimeList" resultType="EnvironmentValue">
+        SELECT
+            id,
+            monitor_point_code,
+            `value`,
+            monitor_time,
+            date_type,
+            `max_value`,
+            min_value,
+            avg_value
+        FROM (
+                 SELECT
+                     *,
+                     -- 仅对“实时数据”按监控点分组排序
+                     ROW_NUMBER() OVER (
+        PARTITION BY monitor_point_code
+        ORDER BY monitor_time DESC
+        ) AS rn
+                 FROM environment_value
+                 WHERE date_type = 'real_time'  -- 提前过滤，减少计算量
+             ) AS subquery
+        WHERE rn = 1;  -- 取每组最新记录
+    </select>
+    <!--统计一周内空气质量-->
+    <select id="countAirQuality" resultType="map">
+        SELECT
+        level_type AS 'level',
+        COUNT(*) AS 'count'
+        FROM (
+        SELECT
+        value,
+        CASE
+        WHEN value &gt; 0 AND value &lt;= 35 THEN '优'
+        WHEN value &gt; 35 AND value &lt;= 75 THEN '良'
+        WHEN value &gt; 75 AND value &lt;= 115 THEN '轻度污染'
+        WHEN value &gt; 115 AND value &lt;= 150 THEN '中度污染'
+        WHEN value &gt; 150 AND value &lt;= 250 THEN '重度污染'
+        WHEN value &gt; 250 THEN '严重污染'
+        ELSE '数据异常'
+        END AS level_type
+        FROM environment_value
+        WHERE monitor_point_code = 'pm25'
+        AND value IS NOT NULL
+        <!--        AND monitor_time &gt;= DATE_SUB(NOW(), INTERVAL 7 DAY)-->
+        <!--        AND monitor_time &lt;= NOW()-->
+        AND monitor_time &gt;= DATE_SUB('2025-09-28 00:00:00', INTERVAL 7 DAY)
+        AND monitor_time &lt;= '2025-09-28 00:00:00'
+        AND date_type = 'day_time'
+        ) AS level_data
+        GROUP BY level_type
+        ORDER BY
+        CASE level_type
+        WHEN '优' THEN 1
+        WHEN '良' THEN 2
+        WHEN '轻度污染' THEN 3
+        WHEN '中度污染' THEN 4
+        WHEN '重度污染' THEN 5
+        WHEN '严重污染' THEN 6
+        ELSE 7
+        END;
+    </select>
+    <!-- 查询方法 -->
+    <select id="selectByPage" parameterType="EnvironmentValueParam" resultType="EnvironmentValue">
+        SELECT
+        ev.*,
+        ea.asset_name,
+        emp.unit,
+        emp.alarm_upper,
+        emp.alarm_lower,
+        emp.point_name
+        FROM environment_value ev
+        LEFT JOIN equipment_assets ea ON ea.asset_id = ev.asset_id
+        LEFT JOIN environment_monitor_point emp ON emp.point_code = ev.monitor_point_code
+        WHERE 1=1
+        <!-- 数据类型条件 -->
+        <if test="data.dateType != null and data.dateType != ''">
+            AND ev.date_type = #{data.dateType}
+        </if>
+        <!-- 监测点名称模糊查询（类似原SQL的%PM%条件，这里改为动态参数） -->
+        <if test="data.monitorPointName != null and data.monitorPointName != ''">
+            AND emp.point_name LIKE CONCAT('%', #{data.monitorPointName}, '%')
+        </if>
+        <!-- 监测点编码条件 -->
+        <if test="data.monitorPointCode != null and data.monitorPointCode != ''">
+            AND ev.monitor_point_code = #{data.monitorPointCode}
+        </if>
+        <!-- 开始时间条件 -->
+        <if test="data.startTime != null">
+            AND ev.monitor_time &gt; #{data.startTime}
+        </if>
+        <!-- 结束时间条件 -->
+        <if test="data.endTime != null">
+            AND ev.monitor_time &lt; #{data.endTime}
+        </if>
+    </select>
+</mapper>
