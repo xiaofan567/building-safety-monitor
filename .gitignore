@@ -21,3 +21,6 @@ review_rules.md
 # 敏感配置文件
 application-env.yml
 **/application-env.yml
+
+# IDE 本地工具配置
+.trae/
