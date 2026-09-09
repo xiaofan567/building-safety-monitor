@@ -1,8 +1,10 @@
 package com.qst.smartbuildings.aicameraserver;
 
 import cn.hutool.core.util.ObjectUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qst.smartbuildings.common.UpdateOperationEnum;
+import com.qst.smartbuildings.entity.camera.AIDetectionResult;
 import com.qst.smartbuildings.entity.camera.Camera;
 import com.qst.smartbuildings.exception.CameraException;
 import com.qst.smartbuildings.mapper.CameraMapper;
@@ -14,17 +16,33 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+
+import static com.qst.smartbuildings.entity.camera.AIDetectionResult.checkDetectionResult;
+import static com.qst.smartbuildings.entity.camera.AIDetectionResult.isValidDetectionResult;
 
 /**
  * AI 摄像头服务
@@ -41,6 +59,10 @@ public class AICameraService {
 
     @Autowired
     private CameraMapper cameraMapper;
+    @Autowired
+    private RestTemplate restTemplate;
+    @Autowired
+    private com.qst.smartbuildings.service.AiAlertService aiAlertService;
     //AI监测服务URL
     @Value("${camera.ai.baseUrl}")
     private String AI_CAMERA_URL;
@@ -137,6 +159,8 @@ public class AICameraService {
                                 BufferedImage image = converter.convert(frame);
                                 // 更新上一次处理时间
                                 lastProcessTime = currentTime;
+                                // 发送图片给AI服务进行检测
+                                sendImageToDetectionService(image, camera);
                                 setStatus(camera, "1");
                                 // 成功处理后重置重试计数
                                 retryCount = 0;
@@ -250,5 +274,59 @@ public class AICameraService {
      * */
     public Boolean isCameraCanUse(Camera camera) {
         return "1".equals(camera.getIsEnable())&& ObjectUtil.isNotEmpty(camera.getAiMonitorType())&&ObjectUtil.isNotEmpty(camera.getWvpOpenUrl());
+    }
+
+    //AI检测结果缓存，用于存储摄像头ID和最新的AI检测结果
+    private Map<Integer, List<AIDetectionResult>> aiDetectionResultMap = new HashMap<>();
+
+    /*
+     * 发送图片给AI服务进行检测
+     * @param image 图片
+     * @param camera 摄像头实体
+     * */
+    private void sendImageToDetectionService(BufferedImage image, Camera camera) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            ImageIO.write(image, "jpg", baos);
+            byte[] imageBytes = baos.toByteArray();
+            // 构建请求体
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("image", new ByteArrayResource(imageBytes) {
+                @Override
+                public String getFilename() {
+                    return "frame.jpg";
+                }
+            });
+            // 添加检测类型 例如1,2,3
+            String[] types = camera.getAiMonitorType().split(",");
+            for (String type : types) {
+                body.add("type", type);
+            }
+            // 发送请求
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+            String detectUrl = AI_CAMERA_URL;
+            ResponseEntity<String> response = restTemplate.postForEntity(detectUrl, request, String.class);
+            // 解析响应列表
+            List<AIDetectionResult> detectionResults = JSONObject.parseArray(response.getBody(), AIDetectionResult.class);
+            // 处理检测结果,首先检测是否为有效报警目标
+            if (isValidDetectionResult(detectionResults)) {
+                // 处理有效检测结果
+                List<AIDetectionResult> oldList = aiDetectionResultMap.get(camera.getId());
+                // 检查是否有变化
+                if (checkDetectionResult(oldList, detectionResults)) {
+                    // 发送报警
+                    aiAlertService.insertByCamera(detectionResults, camera, image);
+                }
+            }
+            //将最新的监测结果存入到缓存中
+            aiDetectionResultMap.put(camera.getId(), detectionResults);
+        } catch (IOException e) {
+            log.error("图片转换失败", e);
+            throw new RuntimeException("图片转换失败", e);
+        } catch (RestClientException e) {
+            log.error("请求检测服务失败", e);
+            throw new RuntimeException("请求检测服务失败", e);
+        }
     }
 }

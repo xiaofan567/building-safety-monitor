@@ -1,5 +1,6 @@
 package com.qst.smartbuildings.config;
 
+import cn.hutool.json.JSONUtil;
 import com.qst.smartbuildings.common.AuthConst;
 import com.qst.smartbuildings.entity.AdminUser;
 import com.qst.smartbuildings.util.RedisClient;
@@ -44,6 +45,14 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
             String token = request.getHeader(AuthConst.TOKEN_NAME);
             if (StringUtils.hasText(token)) {
+                Object stored = redisClient.get(AuthConst.USER_TOKEN_HEAD + token);
+                if (stored != null) {
+                    String principal = JSONUtil.parseObj(stored).getStr("userId");
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    principal, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
                 Object value = redisClient.get(AuthConst.USER_TOKEN_HEAD + token);
                 if (value != null) {
                     // 从 Redis 中解析出数字 userId 作为认证主体，使下游可解析出真实登录人 ID。
