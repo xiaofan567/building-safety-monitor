@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qst.smartbuildings.mapper.ElevatorInfoMapper">
+
+    <!-- 查询升降机列表：关联设备资产与位置，补充设备名称、设备编号、位置名称 -->
+    <select id="selectAllElevator" resultType="com.qst.smartbuildings.entity.ElevatorInfo">
+        SELECT
+            ei.id,
+            ei.asset_id,
+            ei.rated_weight,
+            ei.basic_height,
+            ei.ascending_speed,
+            ei.rated_load,
+            ei.cabin_size,
+            ei.max_ascending_height,
+            eq.asset_name,
+            eq.asset_code,
+            loc.location_name
+        FROM equipment_assets eq
+        INNER JOIN elevator_info ei ON ei.asset_id = eq.asset_id
+        LEFT JOIN equipment_location loc ON eq.location_id = loc.location_id
+        WHERE eq.type_id = #{typeId}
+    </select>
+
+    <!-- 按报警内容分组统计数量 -->
+    <select id="selectAlarmTypeList" resultType="com.qst.smartbuildings.entity.AlarmTypeItem">
+        SELECT COUNT(*) AS count, content AS content
+        FROM monitor_point_alert
+        WHERE equipment_id = #{assetId}
+          AND monitor_alert_type = #{monitorAlertType}
+        GROUP BY content
+        ORDER BY count DESC
+    </select>
+
+    <!-- 按日期分组统计近30天预警/报警数量 -->
+    <select id="selectAlarmDays" resultType="com.qst.smartbuildings.entity.AlarmDayItem">
+        SELECT COUNT(*) AS alarm_count, DATE_FORMAT(create_time, '%Y-%m-%d') AS alarm_date
+        FROM monitor_point_alert
+        WHERE equipment_id = #{assetId}
+          AND monitor_alert_type = #{monitorAlertType}
+          AND alert_type = #{alertType}
+          AND create_time &gt;= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+        ORDER BY alarm_date ASC
+    </select>
+</mapper>
