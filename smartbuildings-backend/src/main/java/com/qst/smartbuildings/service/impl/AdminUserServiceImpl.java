@@ -66,7 +66,7 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
         }
         String token = generateSecureToken();
         AdminUser tokenUser = createTokenUser(user);
-        redisClient.set(token, tokenUser,
+        redisClient.set(AuthConst.USER_TOKEN_HEAD + token, tokenUser,
                 AuthConst.TOKEN_EXPIRED_TIME, TimeUnit.SECONDS);
         Map<String, Object> result = new HashMap<>();
         result.put("adminToken", token);
@@ -82,7 +82,7 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
      */
     @Override
     public AdminUser queryLoginUser(String token) {
-        Object obj = redisClient.get(token);
+        Object obj = redisClient.get(AuthConst.USER_TOKEN_HEAD + token);
         if (obj == null) {
             throw new AuthException(AuthorizationCodeEnum.AUTHORIZATION_LOGIN);
         }
@@ -108,7 +108,7 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
      */
     @Override
     public void logout(String token) {
-        redisClient.delete(token);
+        redisClient.delete(AuthConst.USER_TOKEN_HEAD + token);
     }
 
     @Override

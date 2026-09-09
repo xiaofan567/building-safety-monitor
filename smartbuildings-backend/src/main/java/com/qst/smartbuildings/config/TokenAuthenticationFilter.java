@@ -1,6 +1,7 @@
 package com.qst.smartbuildings.config;
 
 import com.qst.smartbuildings.common.AuthConst;
+import com.qst.smartbuildings.entity.AdminUser;
 import com.qst.smartbuildings.util.RedisClient;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -16,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 基于 Admin-Token 的登录认证过滤器
@@ -42,16 +44,52 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
             String token = request.getHeader(AuthConst.TOKEN_NAME);
             if (StringUtils.hasText(token)) {
-                Object userId = redisClient.get(AuthConst.USER_TOKEN_HEAD + token);
-                if (userId != null) {
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    userId.toString(), null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                Object value = redisClient.get(AuthConst.USER_TOKEN_HEAD + token);
+                if (value != null) {
+                    // 从 Redis 中解析出数字 userId 作为认证主体，使下游可解析出真实登录人 ID。
+                    // Redis 使用 JSON 序列化（未开启类型标记），读回的可能是 AdminUser、数字、
+                    // 反序列化后的 Map 或字符串，需兼容处理。
+                    Long principal = resolveUserId(value);
+                    if (principal != null) {
+                        UsernamePasswordAuthenticationToken authentication =
+                                new UsernamePasswordAuthenticationToken(
+                                        principal, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
                 }
             }
         }
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * 从 Redis 中的登录态值解析出数字 userId。
+     * 兼容 AdminUser 对象、数字、反序列化后的 Map，以及数字字符串。
+     *
+     * @param value Redis 中存储的值
+     * @return 数字 userId；无法解析时返回 null
+     */
+    private Long resolveUserId(Object value) {
+        if (value instanceof AdminUser user) {
+            return user.getUserId();
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof Map<?, ?> map) {
+            Object id = map.get("userId");
+            if (id instanceof Number) {
+                return ((Number) id).longValue();
+            }
+            if (id != null) {
+                return Long.valueOf(id.toString());
+            }
+        }
+        try {
+            return Long.valueOf(value.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
