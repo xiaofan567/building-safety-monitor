@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qst.smartbuildings.mapper.TowerInfoMapper">
+
+    <!-- 查询塔吊列表：关联设备资产与位置，补充设备名称、位置名称、平台设备标识 -->
+    <select id="selectAllTower" resultType="com.qst.smartbuildings.entity.TowerInfo">
+        SELECT
+            ti.id,
+            ti.asset_id,
+            ti.forward_arm_length,
+            ti.backward_arm_length,
+            ti.max_height,
+            ti.rated_load,
+            ti.max_load,
+            ti.rated_moment,
+            ti.create_time,
+            ti.update_time,
+            eq.asset_name,
+            eq.platform_eq_code,
+            loc.location_name
+        FROM equipment_assets eq
+        INNER JOIN tower_info ti ON ti.asset_id = eq.asset_id
+        LEFT JOIN equipment_location loc ON eq.location_id = loc.location_id
+        WHERE eq.type_id = #{typeId}
+    </select>
+
+    <!-- 查询全部塔机信息列表：联表补充平台设备标识（用于数据处理组件内存初始化） -->
+    <select id="getTowerList" resultType="com.qst.smartbuildings.entity.TowerInfo">
+        SELECT
+            ti.id,
+            ti.asset_id,
+            ti.forward_arm_length,
+            ti.backward_arm_length,
+            ti.max_height,
+            ti.rated_load,
+            ti.max_load,
+            ti.rated_moment,
+            ti.create_time,
+            ti.update_time,
+            eq.asset_name,
+            eq.platform_eq_code
+        FROM equipment_assets eq
+        INNER JOIN tower_info ti ON ti.asset_id = eq.asset_id
+    </select>
+
+    <!-- 查询塔吊今日工作状态聚合 -->
+    <select id="selectTowerWorkInfo" resultType="com.qst.smartbuildings.entity.TowerWorkInfoVO">
+        SELECT
+            COUNT(*) AS total_times,
+            IFNULL(SUM(TIMESTAMPDIFF(SECOND, start_time, end_time)), 0) AS total_work_time,
+            IFNULL(SUM(weight), 0) AS total_load,
+            IFNULL(SUM(max_percent), 0) AS total_effect
+        FROM tower_work
+        WHERE asset_id = #{assetId}
+          AND start_time &gt;= CURDATE()
+          AND start_time &lt; DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+    </select>
+
+    <!-- 按报警内容分组统计数量 -->
+    <select id="selectAlarmTypeList" resultType="com.qst.smartbuildings.entity.AlarmTypeItem">
+        SELECT COUNT(*) AS count, content AS content
+        FROM monitor_point_alert
+        WHERE equipment_id = #{assetId}
+          AND monitor_alert_type = #{monitorAlertType}
+        GROUP BY content
+        ORDER BY count DESC
+    </select>
+
+    <!-- 按日期分组统计近30天预警/报警数量 -->
+    <select id="selectAlarmDays" resultType="com.qst.smartbuildings.entity.AlarmDayItem">
+        SELECT COUNT(*) AS alarm_count, DATE_FORMAT(create_time, '%Y-%m-%d') AS alarm_date
+        FROM monitor_point_alert
+        WHERE equipment_id = #{assetId}
+          AND monitor_alert_type = #{monitorAlertType}
+          AND alert_type = #{alertType}
+          AND create_time &gt;= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+        ORDER BY alarm_date ASC
+    </select>
+</mapper>

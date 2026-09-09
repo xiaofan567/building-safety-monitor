@@ -142,4 +142,8 @@ public class EquipmentAssets implements Serializable {
     @TableField(exist = false)
     @Schema(description = "设备类型名称（联表冗余，非表字段）")
     private String typeName;
+
+    @TableField(exist = false)
+    @Schema(description = "扩展参数（JSON字符串，用于危大工程设备参数初始化，如塔机额定力矩等）")
+    private String extraParams;
 }

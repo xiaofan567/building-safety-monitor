@@ -1,17 +1,26 @@
 package com.qst.smartbuildings.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.qst.smartbuildings.common.UpdateOperationEnum;
 import com.qst.smartbuildings.entity.BPage;
+import com.qst.smartbuildings.entity.ElevatorInfo;
 import com.qst.smartbuildings.entity.EquipmentAssets;
 import com.qst.smartbuildings.entity.EquipmentLocation;
 import com.qst.smartbuildings.entity.EquipmentType;
+import com.qst.smartbuildings.entity.TowerInfo;
 import com.qst.smartbuildings.entity.camera.Camera;
 import com.qst.smartbuildings.mapper.CameraMapper;
+import com.qst.smartbuildings.mapper.ElevatorInfoMapper;
 import com.qst.smartbuildings.mapper.EquipmentAssetsMapper;
 import com.qst.smartbuildings.mapper.EquipmentLocationMapper;
 import com.qst.smartbuildings.mapper.EquipmentTypeMapper;
+import com.qst.smartbuildings.mapper.TowerInfoMapper;
 import com.qst.smartbuildings.service.EquipmentAssetsService;
+import com.qst.smartbuildings.tcpserver.handle.TowerDataProcessHandle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,6 +36,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.qst.smartbuildings.common.EquipmentTypeConst.CAMERA_TYPE_ID;
+import static com.qst.smartbuildings.common.EquipmentTypeConst.ELEVATOR_TYPE_ID;
+import static com.qst.smartbuildings.common.EquipmentTypeConst.TOWER_TYPE_ID;
 
 /**
  * 设备资产管理服务实现
@@ -180,6 +191,12 @@ public class EquipmentAssetsServiceImpl
 //新添加
     @Autowired
     private CameraMapper cameraMapper;
+    @Autowired
+    private TowerInfoMapper towerInfoMapper;
+    @Autowired
+    private ElevatorInfoMapper elevatorInfoMapper;
+    @Autowired
+    private TowerDataProcessHandle towerDataProcessHandle;
     /**
      * 重写保存方法
      * @param entity
@@ -198,6 +215,29 @@ public class EquipmentAssetsServiceImpl
             //默认排序
             camera.setSort(0);
             cameraMapper.insert(camera);
+        } else if (b && entity.getTypeId() != null && entity.getTypeId().intValue() == TOWER_TYPE_ID.intValue()) {
+            // 新增塔机信息，并同步内存缓存
+            TowerInfo towerInfo = new TowerInfo();
+            BeanUtil.copyProperties(entity, towerInfo);
+            if (StringUtils.hasText(entity.getExtraParams())) {
+                TowerInfo ext = JSONUtil.toBean(entity.getExtraParams(), TowerInfo.class);
+                towerInfo.setForwardArmLength(ext.getForwardArmLength());
+                towerInfo.setBackwardArmLength(ext.getBackwardArmLength());
+                towerInfo.setMaxHeight(ext.getMaxHeight());
+                towerInfo.setRatedLoad(ext.getRatedLoad());
+                towerInfo.setMaxLoad(ext.getMaxLoad());
+                towerInfo.setRatedMoment(ext.getRatedMoment());
+            }
+            towerInfo.setAssetId(entity.getAssetId());
+            towerInfo.setCreateTime(LocalDateTime.now());
+            towerInfoMapper.insert(towerInfo);
+            towerDataProcessHandle.update(towerInfo, entity.getPlatformEqCode(), UpdateOperationEnum.ADD);
+        } else if (b && entity.getTypeId() != null && entity.getTypeId().intValue() == ELEVATOR_TYPE_ID.intValue()) {
+            // 新增升降机信息
+            ElevatorInfo elevatorInfo = new ElevatorInfo();
+            elevatorInfo.setAssetId(entity.getAssetId());
+            elevatorInfo.setAssetName(entity.getAssetName());
+            elevatorInfoMapper.insert(elevatorInfo);
         }
         return b;
     }
@@ -211,6 +251,64 @@ public class EquipmentAssetsServiceImpl
         if(b && equipmentAssets != null && equipmentAssets.getTypeId() != null
                 && equipmentAssets.getTypeId().intValue() == CAMERA_TYPE_ID.intValue()){
             cameraMapper.delete(new LambdaQueryWrapper<Camera>().eq(Camera::getAssetId, id));
+        } else if (b && equipmentAssets != null && equipmentAssets.getTypeId() != null
+                && equipmentAssets.getTypeId().intValue() == TOWER_TYPE_ID.intValue()) {
+            // 删除塔机信息并同步内存缓存
+            TowerInfo towerInfo = towerInfoMapper.selectOne(new LambdaQueryWrapper<TowerInfo>()
+                    .eq(TowerInfo::getAssetId, id));
+            if (towerInfo != null) {
+                towerInfoMapper.deleteById(towerInfo.getId());
+            }
+            towerDataProcessHandle.update(null, equipmentAssets.getPlatformEqCode(), UpdateOperationEnum.DELETE);
+        } else if (b && equipmentAssets != null && equipmentAssets.getTypeId() != null
+                && equipmentAssets.getTypeId().intValue() == ELEVATOR_TYPE_ID.intValue()) {
+            // 删除升降机信息
+            elevatorInfoMapper.delete(new LambdaQueryWrapper<ElevatorInfo>().eq(ElevatorInfo::getAssetId, id));
+        }
+        return b;
+    }
+
+    /**
+     * 重写更新方法，同步塔机/升降机信息变更到对应数据表与内存缓存
+     *
+     * @param entity 设备资产信息
+     * @return 更新结果
+     */
+    @Override
+    public boolean updateById(EquipmentAssets entity) {
+        boolean b = super.updateById(entity);
+        if (b && entity.getTypeId() != null && entity.getTypeId().intValue() == TOWER_TYPE_ID.intValue()) {
+            // 更新塔机信息并同步内存缓存
+            TowerInfo record = towerInfoMapper.selectOne(new LambdaQueryWrapper<TowerInfo>()
+                    .eq(TowerInfo::getAssetId, entity.getAssetId()));
+            if (record != null) {
+                Long id = record.getId();
+                record = new TowerInfo();
+                BeanUtil.copyProperties(entity, record);
+                if (StringUtils.hasText(entity.getExtraParams())) {
+                    TowerInfo ext = JSONUtil.toBean(entity.getExtraParams(), TowerInfo.class);
+                    record.setForwardArmLength(ext.getForwardArmLength());
+                    record.setBackwardArmLength(ext.getBackwardArmLength());
+                    record.setMaxHeight(ext.getMaxHeight());
+                    record.setRatedLoad(ext.getRatedLoad());
+                    record.setMaxLoad(ext.getMaxLoad());
+                    record.setRatedMoment(ext.getRatedMoment());
+                }
+                record.setId(id);
+                record.setAssetId(entity.getAssetId());
+                towerInfoMapper.updateById(record);
+                towerDataProcessHandle.update(record, entity.getPlatformEqCode(), UpdateOperationEnum.UPDATE);
+            }
+        } else if (b && entity.getTypeId() != null && entity.getTypeId().intValue() == ELEVATOR_TYPE_ID.intValue()) {
+            // 更新升降机信息（参数由前端在升降机管理接口维护），此处仅同步不存在时兜底插入
+            Long count = elevatorInfoMapper.selectCount(new LambdaQueryWrapper<ElevatorInfo>()
+                    .eq(ElevatorInfo::getAssetId, entity.getAssetId()));
+            if (count == null || count == 0) {
+                ElevatorInfo elevatorInfo = new ElevatorInfo();
+                elevatorInfo.setAssetId(entity.getAssetId());
+                elevatorInfo.setAssetName(entity.getAssetName());
+                elevatorInfoMapper.insert(elevatorInfo);
+            }
         }
         return b;
     }

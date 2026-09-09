@@ -3,8 +3,10 @@ package com.qst.smartbuildings.tcpserver;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qst.smartbuildings.entity.data.DeviceReportDTO;
+import com.qst.smartbuildings.tcpserver.handle.DeviceDataProcessHandle;
 //import com.qst.smartbuildings.tcpserver.handle.EnvironmentDataProcessHandle;
 import com.qst.smartbuildings.tcpserver.handle.EquipmentAssetsDataProcessHandle;
+import com.qst.smartbuildings.tcpserver.handle.TowerDataProcessHandle;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -31,6 +33,9 @@ import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Netty TCP 服务器
  *
@@ -48,6 +53,7 @@ public class TCPNettyServer {
     private final TCPClientPool tcpClientPool;
     private final ObjectMapper objectMapper;
     private final EquipmentAssetsDataProcessHandle equipmentAssetsDataProcessHandle;
+    private final List<DeviceDataProcessHandle<?>> handleList;
 
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
@@ -75,11 +81,15 @@ public class TCPNettyServer {
     public TCPNettyServer(@Value("${device.tcp.port:8888}") int tcpPort,
                           TCPClientPool tcpClientPool,
                           ObjectMapper objectMapper,
-                          EquipmentAssetsDataProcessHandle equipmentAssetsDataProcessHandle) {
+                          EquipmentAssetsDataProcessHandle equipmentAssetsDataProcessHandle,
+                          TowerDataProcessHandle towerDataProcessHandle) {
         this.tcpPort = tcpPort;
         this.tcpClientPool = tcpClientPool;
         this.objectMapper = objectMapper;
         this.equipmentAssetsDataProcessHandle = equipmentAssetsDataProcessHandle;
+        // 注册各设备类型数据处理组件
+        this.handleList = new ArrayList<>();
+        this.handleList.add(towerDataProcessHandle);
     }
 
     /**
@@ -131,7 +141,8 @@ public class TCPNettyServer {
                                 pipeline.addLast(new TcpServerHandler(
                                         tcpClientPool,
                                         objectMapper,
-                                        equipmentAssetsDataProcessHandle
+                                        equipmentAssetsDataProcessHandle,
+                                        handleList
                                 ));
                             }
                         });
@@ -178,14 +189,17 @@ public class TCPNettyServer {
         private final TCPClientPool tcpClientPool;
         private final ObjectMapper objectMapper;
         private final EquipmentAssetsDataProcessHandle equipmentAssetsDataProcessHandle;
+        private final List<DeviceDataProcessHandle<?>> handleList;
 
         // 构造函数注入所有依赖
         public TcpServerHandler(TCPClientPool tcpClientPool,
                                 ObjectMapper objectMapper,
-                                EquipmentAssetsDataProcessHandle equipmentAssetsDataProcessHandle) {
+                                EquipmentAssetsDataProcessHandle equipmentAssetsDataProcessHandle,
+                                List<DeviceDataProcessHandle<?>> handleList) {
             this.tcpClientPool = tcpClientPool;
             this.objectMapper = objectMapper;
             this.equipmentAssetsDataProcessHandle = equipmentAssetsDataProcessHandle;
+            this.handleList = handleList;
         }
 
         @Override
@@ -210,6 +224,10 @@ public class TCPNettyServer {
                 validateReportData(reportDTO, clientId);
                 // 处理设备数据
                 equipmentAssetsDataProcessHandle.processEquipmentAssetsData(reportDTO, clientId);
+                // 遍历各设备类型数据处理组件处理数据
+                for (DeviceDataProcessHandle<?> handle : handleList) {
+                    handle.processData(reportDTO, clientId);
+                }
                 // 构建响应
                 String response = String.format("{\"status\":\"success\", \"message\":\"数据已接收\", \"timestamp\":%d}",
                         System.currentTimeMillis());
