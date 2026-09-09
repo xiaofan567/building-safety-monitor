@@ -16,6 +16,7 @@ from model_loader import (
     TYPE_SAFETY_CLOTHING,
     TYPE_SMOKEFIRE,
 )
+from crane.predictor import TowerSafetyPredictor
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,6 +33,9 @@ def create_app():
     app.model_manager = ModelManager()
     app.model_manager.load_all()
 
+    # 塔吊安全预测器：启动时加载塔吊 AI 预测模型
+    app.tower_predictor = TowerSafetyPredictor()
+
     @app.get("/api/health")
     def health():
         """健康检查：返回服务状态及各模型加载情况。"""
@@ -43,9 +47,31 @@ def create_app():
                     "cigarette": TYPE_CIGARETTE in app.model_manager._models,
                     "smokefire": TYPE_SMOKEFIRE in app.model_manager._models,
                     "safety_clothing": TYPE_SAFETY_CLOTHING in app.model_manager._models,
+                    "tower_crane": app.tower_predictor.model is not None,
                 },
             }
         )
+
+    @app.post("/crane_safety")
+    def crane_safety():
+        """塔机AI报警预测（application/json）。
+
+        入参：
+            crane_data: 塔吊实时监测数据数组，每项含 weight/amplitude/obliguity/
+                        windSpeed/moment/height/rotation（以及 monitorTime/assetId）。
+        返回：
+            {"status","last_10_safety_results","request_info"}。
+        """
+        payload = request.get_json(silent=True)
+        if not payload or not isinstance(payload.get("crane_data"), list):
+            return jsonify({"message": "缺少参数 crane_data 或格式不正确"}), 400
+        if not payload["crane_data"]:
+            return jsonify({"message": "crane_data 不能为空"}), 400
+        try:
+            result = app.tower_predictor.predict(payload["crane_data"])
+        except ValueError as exc:
+            return jsonify({"message": str(exc)}), 400
+        return jsonify(result)
 
     @app.post("/detect")
     def detect():
