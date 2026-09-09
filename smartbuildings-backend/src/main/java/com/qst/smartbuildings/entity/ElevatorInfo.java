@@ -47,6 +47,10 @@ public class ElevatorInfo implements Serializable {
     private Double maxAscendingHeight;
 
     @TableField(exist = false)
+    @Schema(description = "平台设备标识（联表冗余，非表字段）")
+    private String platformEqCode;
+
+    @TableField(exist = false)
     @Schema(description = "设备名称（联表冗余，非表字段）")
     private String assetName;
 

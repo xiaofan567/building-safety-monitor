@@ -20,6 +20,7 @@ import com.qst.smartbuildings.mapper.EquipmentLocationMapper;
 import com.qst.smartbuildings.mapper.EquipmentTypeMapper;
 import com.qst.smartbuildings.mapper.TowerInfoMapper;
 import com.qst.smartbuildings.service.EquipmentAssetsService;
+import com.qst.smartbuildings.tcpserver.handle.ElevatorInfoDataProcessHandle;
 import com.qst.smartbuildings.tcpserver.handle.TowerDataProcessHandle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -197,6 +198,8 @@ public class EquipmentAssetsServiceImpl
     private ElevatorInfoMapper elevatorInfoMapper;
     @Autowired
     private TowerDataProcessHandle towerDataProcessHandle;
+    @Autowired
+    private ElevatorInfoDataProcessHandle elevatorInfoDataProcessHandle;
     /**
      * 重写保存方法
      * @param entity
@@ -233,11 +236,21 @@ public class EquipmentAssetsServiceImpl
             towerInfoMapper.insert(towerInfo);
             towerDataProcessHandle.update(towerInfo, entity.getPlatformEqCode(), UpdateOperationEnum.ADD);
         } else if (b && entity.getTypeId() != null && entity.getTypeId().intValue() == ELEVATOR_TYPE_ID.intValue()) {
-            // 新增升降机信息
+            // 新增升降机信息，并同步内存缓存
             ElevatorInfo elevatorInfo = new ElevatorInfo();
             elevatorInfo.setAssetId(entity.getAssetId());
             elevatorInfo.setAssetName(entity.getAssetName());
+            if (StringUtils.hasText(entity.getExtraParams())) {
+                ElevatorInfo ext = JSONUtil.toBean(entity.getExtraParams(), ElevatorInfo.class);
+                elevatorInfo.setRatedWeight(ext.getRatedWeight());
+                elevatorInfo.setBasicHeight(ext.getBasicHeight());
+                elevatorInfo.setAscendingSpeed(ext.getAscendingSpeed());
+                elevatorInfo.setRatedLoad(ext.getRatedLoad());
+                elevatorInfo.setCabinSize(ext.getCabinSize());
+                elevatorInfo.setMaxAscendingHeight(ext.getMaxAscendingHeight());
+            }
             elevatorInfoMapper.insert(elevatorInfo);
+            elevatorInfoDataProcessHandle.update(elevatorInfo, entity.getPlatformEqCode(), UpdateOperationEnum.ADD);
         }
         return b;
     }
@@ -262,8 +275,9 @@ public class EquipmentAssetsServiceImpl
             towerDataProcessHandle.update(null, equipmentAssets.getPlatformEqCode(), UpdateOperationEnum.DELETE);
         } else if (b && equipmentAssets != null && equipmentAssets.getTypeId() != null
                 && equipmentAssets.getTypeId().intValue() == ELEVATOR_TYPE_ID.intValue()) {
-            // 删除升降机信息
+            // 删除升降机信息并同步内存缓存
             elevatorInfoMapper.delete(new LambdaQueryWrapper<ElevatorInfo>().eq(ElevatorInfo::getAssetId, id));
+            elevatorInfoDataProcessHandle.update(null, equipmentAssets.getPlatformEqCode(), UpdateOperationEnum.DELETE);
         }
         return b;
     }
@@ -300,15 +314,29 @@ public class EquipmentAssetsServiceImpl
                 towerDataProcessHandle.update(record, entity.getPlatformEqCode(), UpdateOperationEnum.UPDATE);
             }
         } else if (b && entity.getTypeId() != null && entity.getTypeId().intValue() == ELEVATOR_TYPE_ID.intValue()) {
-            // 更新升降机信息（参数由前端在升降机管理接口维护），此处仅同步不存在时兜底插入
-            Long count = elevatorInfoMapper.selectCount(new LambdaQueryWrapper<ElevatorInfo>()
+            // 更新升降机信息并同步内存缓存
+            ElevatorInfo record = elevatorInfoMapper.selectOne(new LambdaQueryWrapper<ElevatorInfo>()
                     .eq(ElevatorInfo::getAssetId, entity.getAssetId()));
-            if (count == null || count == 0) {
-                ElevatorInfo elevatorInfo = new ElevatorInfo();
-                elevatorInfo.setAssetId(entity.getAssetId());
-                elevatorInfo.setAssetName(entity.getAssetName());
+            Long elevatorId = record == null ? null : record.getId();
+            ElevatorInfo elevatorInfo = new ElevatorInfo();
+            elevatorInfo.setAssetId(entity.getAssetId());
+            elevatorInfo.setAssetName(entity.getAssetName());
+            if (StringUtils.hasText(entity.getExtraParams())) {
+                ElevatorInfo ext = JSONUtil.toBean(entity.getExtraParams(), ElevatorInfo.class);
+                elevatorInfo.setRatedWeight(ext.getRatedWeight());
+                elevatorInfo.setBasicHeight(ext.getBasicHeight());
+                elevatorInfo.setAscendingSpeed(ext.getAscendingSpeed());
+                elevatorInfo.setRatedLoad(ext.getRatedLoad());
+                elevatorInfo.setCabinSize(ext.getCabinSize());
+                elevatorInfo.setMaxAscendingHeight(ext.getMaxAscendingHeight());
+            }
+            if (record != null) {
+                elevatorInfo.setId(elevatorId);
+                elevatorInfoMapper.updateById(elevatorInfo);
+            } else {
                 elevatorInfoMapper.insert(elevatorInfo);
             }
+            elevatorInfoDataProcessHandle.update(elevatorInfo, entity.getPlatformEqCode(), UpdateOperationEnum.UPDATE);
         }
         return b;
     }

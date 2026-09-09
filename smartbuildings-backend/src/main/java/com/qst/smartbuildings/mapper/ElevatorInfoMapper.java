@@ -21,6 +21,11 @@ public interface ElevatorInfoMapper extends BaseMapper<ElevatorInfo> {
     List<ElevatorInfo> selectAllElevator(@Param("typeId") Long typeId);
 
     /**
+     * 查询全部升降机（联表补充平台设备标识，用于数据处理组件初始化）
+     */
+    List<ElevatorInfo> getAllElevator();
+
+    /**
      * 按报警内容分组统计报警数量
      */
     List<AlarmTypeItem> selectAlarmTypeList(@Param("assetId") Long assetId,

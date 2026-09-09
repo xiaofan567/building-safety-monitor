@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qst.smartbuildings.entity.data.DeviceReportDTO;
 import com.qst.smartbuildings.tcpserver.handle.DeviceDataProcessHandle;
 //import com.qst.smartbuildings.tcpserver.handle.EnvironmentDataProcessHandle;
+import com.qst.smartbuildings.tcpserver.handle.ElevatorInfoDataProcessHandle;
 import com.qst.smartbuildings.tcpserver.handle.EquipmentAssetsDataProcessHandle;
 import com.qst.smartbuildings.tcpserver.handle.TowerDataProcessHandle;
 import io.netty.bootstrap.ServerBootstrap;
@@ -82,7 +83,8 @@ public class TCPNettyServer {
                           TCPClientPool tcpClientPool,
                           ObjectMapper objectMapper,
                           EquipmentAssetsDataProcessHandle equipmentAssetsDataProcessHandle,
-                          TowerDataProcessHandle towerDataProcessHandle) {
+                          TowerDataProcessHandle towerDataProcessHandle,
+                          ElevatorInfoDataProcessHandle elevatorInfoDataProcessHandle) {
         this.tcpPort = tcpPort;
         this.tcpClientPool = tcpClientPool;
         this.objectMapper = objectMapper;
@@ -90,6 +92,7 @@ public class TCPNettyServer {
         // 注册各设备类型数据处理组件
         this.handleList = new ArrayList<>();
         this.handleList.add(towerDataProcessHandle);
+        this.handleList.add(elevatorInfoDataProcessHandle);
     }
 
     /**
