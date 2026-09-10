@@ -3,6 +3,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router' // 引入路由配置
 import './assets/tailwind.css'
+import './styles/theme.css'
 import store from './store'
 import ElementPlus from 'element-plus';
 import 'element-plus/dist/index.css'

@@ -22,6 +22,22 @@
         WHERE eq.type_id = #{typeId}
     </select>
 
+    <!-- 查询全部升降机（联表补充平台设备标识）：用于数据处理组件初始化 -->
+    <select id="getAllElevator" resultType="com.qst.smartbuildings.entity.ElevatorInfo">
+        SELECT
+            ei.id,
+            ei.asset_id,
+            ei.rated_weight,
+            ei.basic_height,
+            ei.ascending_speed,
+            ei.rated_load,
+            ei.cabin_size,
+            ei.max_ascending_height,
+            eq.platform_eq_code
+        FROM equipment_assets eq
+        INNER JOIN elevator_info ei ON ei.asset_id = eq.asset_id
+    </select>
+
     <!-- 按报警内容分组统计数量 -->
     <select id="selectAlarmTypeList" resultType="com.qst.smartbuildings.entity.AlarmTypeItem">
         SELECT COUNT(*) AS count, content AS content

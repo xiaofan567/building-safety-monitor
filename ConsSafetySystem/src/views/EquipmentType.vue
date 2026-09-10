@@ -355,6 +355,7 @@ onMounted(() => {
   flex-direction: column;
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
   overflow: hidden;
+  background: var(--bg-page);
 }
 
 .page-header {
@@ -367,9 +368,9 @@ onMounted(() => {
 
 .page-header h2 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #e8edf2;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-strong);
   letter-spacing: 1px;
 }
 
@@ -382,8 +383,8 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 9px 16px;
+  border-radius: 9px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -392,14 +393,15 @@ onMounted(() => {
 }
 
 .btn-primary {
-  background: #1a73e8;
+  background: var(--primary-grad);
   color: #fff;
-  border-color: #1a73e8;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(176, 123, 62, 0.22);
 }
 
 .btn-primary:hover {
-  background: #1557b0;
-  border-color: #1557b0;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(176, 123, 62, 0.3);
 }
 
 .page-body {
@@ -413,22 +415,24 @@ onMounted(() => {
 .left-panel {
   width: 320px;
   flex-shrink: 0;
-  background: #0f1d2e;
-  border: 1px solid rgba(26, 50, 72, 0.5);
-  border-radius: 10px;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .right-panel {
   flex: 1;
-  background: #0f1d2e;
-  border: 1px solid rgba(26, 50, 72, 0.5);
-  border-radius: 10px;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .panel-header {
@@ -436,14 +440,15 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 16px 18px;
-  border-bottom: 1px solid rgba(26, 50, 72, 0.5);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-soft);
   flex-shrink: 0;
 }
 
 .panel-title {
   font-size: 14px;
   font-weight: 600;
-  color: #e8edf2;
+  color: var(--text-main);
   position: relative;
   padding-left: 14px;
 }
@@ -456,18 +461,18 @@ onMounted(() => {
   transform: translateY(-50%);
   width: 3px;
   height: 16px;
-  background: linear-gradient(180deg, #1a73e8, #0d9e6c);
+  background: var(--primary-grad);
   border-radius: 2px;
 }
 
 .panel-count {
   font-size: 11px;
-  color: #5a6a7a;
+  color: var(--text-muted);
 }
 
 .panel-hint {
   font-size: 12px;
-  color: #5a8fd4;
+  color: var(--primary-text);
 }
 
 .tree-container {
@@ -477,11 +482,11 @@ onMounted(() => {
 }
 
 .tree-container::-webkit-scrollbar {
-  width: 3px;
+  width: 4px;
 }
 
 .tree-container::-webkit-scrollbar-thumb {
-  background: rgba(26, 115, 232, 0.15);
+  background: rgba(176, 123, 62, 0.2);
   border-radius: 2px;
 }
 
@@ -491,7 +496,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #3a5068;
+  color: var(--text-faint);
 }
 
 .tree-empty p {
@@ -501,7 +506,7 @@ onMounted(() => {
 
 .tree-empty .sub {
   font-size: 11px;
-  color: #5a6a7a;
+  color: var(--text-muted);
 }
 
 .tree-node-wrapper {
@@ -513,19 +518,19 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s;
-  position: relative;
+  border: 1px solid transparent;
 }
 
 .tree-node:hover {
-  background: rgba(26, 115, 232, 0.08);
+  background: var(--bg-hover);
 }
 
 .tree-node-selected {
-  background: rgba(26, 115, 232, 0.15) !important;
-  border: 1px solid rgba(26, 115, 232, 0.3);
+  background: var(--primary-tint) !important;
+  border-color: rgba(176, 123, 62, 0.3);
 }
 
 .tree-node-arrow {
@@ -536,13 +541,13 @@ onMounted(() => {
   justify-content: center;
   flex-shrink: 0;
   transition: transform 0.2s;
-  color: #5a6a7a;
-  border-radius: 3px;
+  color: var(--text-muted);
+  border-radius: 4px;
 }
 
 .tree-node-arrow:hover {
-  background: rgba(26, 115, 232, 0.1);
-  color: #8899aa;
+  background: rgba(176, 123, 62, 0.1);
+  color: var(--text-secondary);
 }
 
 .tree-node-arrow.expanded {
@@ -554,36 +559,36 @@ onMounted(() => {
 }
 
 .tree-node-icon {
-  color: #5a6a7a;
+  color: var(--text-muted);
   flex-shrink: 0;
   display: flex;
   align-items: center;
 }
 
 .tree-node-selected .tree-node-icon {
-  color: #1a73e8;
+  color: var(--primary);
 }
 
 .tree-node-label {
   flex: 1;
   font-size: 13px;
-  color: #bcc8d4;
+  color: var(--text-main);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .tree-node-selected .tree-node-label {
-  color: #e8edf2;
-  font-weight: 500;
+  color: var(--primary-text);
+  font-weight: 600;
 }
 
 .tree-node-code {
   font-size: 10px;
-  color: #3a5068;
-  background: rgba(26, 50, 72, 0.4);
+  color: var(--text-secondary);
+  background: var(--bg-muted);
   padding: 1px 6px;
-  border-radius: 3px;
+  border-radius: 4px;
   flex-shrink: 0;
 }
 
@@ -606,15 +611,15 @@ onMounted(() => {
   justify-content: center;
   border: none;
   background: transparent;
-  color: #5a6a7a;
+  color: var(--text-muted);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 5px;
   padding: 0;
 }
 
 .tree-action-btn:hover {
-  background: rgba(26, 115, 232, 0.15);
-  color: #1a73e8;
+  background: var(--primary-tint);
+  color: var(--primary);
 }
 
 .form-container {
@@ -624,20 +629,20 @@ onMounted(() => {
 }
 
 .form-container::-webkit-scrollbar {
-  width: 3px;
+  width: 4px;
 }
 
 .form-container::-webkit-scrollbar-thumb {
-  background: rgba(26, 115, 232, 0.15);
+  background: rgba(176, 123, 62, 0.2);
   border-radius: 2px;
 }
 
 .parent-display {
   font-size: 13px;
-  color: #bcc8d4;
-  background: #0a1625;
-  border: 1px solid rgba(26, 50, 72, 0.4);
-  border-radius: 6px;
+  color: var(--text-secondary);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
   padding: 8px 12px;
   line-height: 1.4;
 }
@@ -649,63 +654,65 @@ onMounted(() => {
 }
 
 :deep(.el-form-item__label) {
-  color: #8899aa;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
 :deep(.el-input__wrapper) {
-  background: #0a1625;
-  border-color: rgba(26, 50, 72, 0.4);
+  background: var(--bg-soft);
+  border-color: var(--border);
   box-shadow: none;
+  border-radius: 8px;
 }
 
 :deep(.el-input__wrapper:hover) {
-  border-color: rgba(26, 115, 232, 0.3);
+  border-color: var(--border-strong);
 }
 
 :deep(.el-input__wrapper.is-focus) {
-  border-color: #1a73e8;
-  box-shadow: 0 0 0 1px rgba(26, 115, 232, 0.2);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary) inset, 0 0 0 3px rgba(176, 123, 62, 0.12);
 }
 
 :deep(.el-input__inner) {
-  color: #bcc8d4;
+  color: var(--text-main);
 }
 
 :deep(.el-input-number) {
-  background: #0a1625;
-  border-color: rgba(26, 50, 72, 0.4);
+  background: var(--bg-soft);
+  border-color: var(--border);
+  border-radius: 8px;
 }
 
 :deep(.el-input-number .el-input__inner) {
-  background: #0a1625;
-  color: #bcc8d4;
+  background: var(--bg-soft);
+  color: var(--text-main);
 }
 
 :deep(.el-button--primary) {
-  --el-button-bg-color: #1a73e8;
-  --el-button-border-color: #1a73e8;
+  --el-button-bg-color: var(--el-color-primary);
+  --el-button-border-color: var(--el-color-primary);
 }
 
 :deep(.el-button--primary:hover) {
-  --el-button-bg-color: #1557b0;
-  --el-button-border-color: #1557b0;
+  --el-button-bg-color: var(--el-color-primary-dark-2);
+  --el-button-border-color: var(--el-color-primary-dark-2);
 }
 
 :deep(.el-button--danger.is-plain) {
   --el-button-bg-color: transparent;
-  --el-button-border-color: rgba(229, 69, 69, 0.4);
-  --el-button-text-color: #e54545;
+  --el-button-border-color: rgba(194, 91, 91, 0.4);
+  --el-button-text-color: var(--danger);
 }
 
 :deep(.el-button) {
-  --el-button-bg-color: #0a1625;
-  --el-button-border-color: rgba(26, 50, 72, 0.4);
-  --el-button-text-color: #8899aa;
+  --el-button-bg-color: var(--bg-white);
+  --el-button-border-color: var(--border-strong);
+  --el-button-text-color: var(--text-secondary);
 }
 
 :deep(.el-button:hover) {
-  --el-button-border-color: rgba(26, 115, 232, 0.3);
-  --el-button-text-color: #bcc8d4;
+  --el-button-border-color: var(--primary);
+  --el-button-text-color: var(--primary);
 }
 </style>

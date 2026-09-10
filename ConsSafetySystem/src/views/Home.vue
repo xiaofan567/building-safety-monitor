@@ -117,8 +117,8 @@ onUnmounted(() => {
           <svg class="logo-icon" viewBox="0 0 24 24" fill="none" width="28" height="28">
             <defs>
               <linearGradient id="navLogoGrad" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#1a73e8" />
-                <stop offset="100%" stop-color="#0d9e6c" />
+                <stop offset="0%" stop-color="#c9a26b" />
+                <stop offset="100%" stop-color="#b07b3e" />
               </linearGradient>
             </defs>
             <path d="M12 2L4 5.5V11C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 11V5.5L12 2Z" fill="url(#navLogoGrad)" opacity="0.15"/>
@@ -203,7 +203,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #060d17;
+  background: var(--bg-page);
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
@@ -213,23 +213,13 @@ onUnmounted(() => {
   justify-content: space-between;
   height: 56px;
   padding: 0 20px;
-  background: rgba(10, 22, 37, 0.95);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(26, 115, 232, 0.1);
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   z-index: 100;
   position: relative;
-}
-
-.top-navbar::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.4), rgba(13, 158, 108, 0.2), transparent);
-  pointer-events: none;
+  box-shadow: 0 2px 12px rgba(120, 95, 60, 0.05);
 }
 
 .navbar-left {
@@ -244,14 +234,10 @@ onUnmounted(() => {
   gap: 10px;
 }
 
-.logo-icon {
-  filter: drop-shadow(0 0 6px rgba(26, 115, 232, 0.3));
-}
-
 .logo-text {
   font-size: 15px;
   font-weight: 700;
-  color: #e8edf2;
+  color: var(--text-strong);
   white-space: nowrap;
   letter-spacing: 1px;
 }
@@ -265,22 +251,22 @@ onUnmounted(() => {
 .nav-item {
   padding: 6px 16px;
   font-size: 13px;
-  color: #8899aa;
-  border-radius: 6px;
+  color: var(--text-muted);
+  border-radius: 20px;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
-  position: relative;
 }
 
 .nav-item:hover {
-  color: #bcc8d4;
-  background: rgba(26, 115, 232, 0.06);
+  color: var(--text-secondary);
+  background: var(--bg-hover);
 }
 
 .nav-item.active {
-  color: #1a73e8;
-  background: rgba(26, 115, 232, 0.1);
+  color: #fff;
+  background: var(--primary-grad);
+  box-shadow: 0 3px 10px rgba(176, 123, 62, 0.25);
 }
 
 .navbar-right {
@@ -298,10 +284,10 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: rgba(10, 22, 37, 0.5);
-  border: 1px solid rgba(26, 50, 72, 0.5);
-  border-radius: 6px;
-  color: #bcc8d4;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
@@ -309,9 +295,9 @@ onUnmounted(() => {
 }
 
 .nav-btn:hover {
-  border-color: rgba(26, 115, 232, 0.4);
-  color: #e8edf2;
-  background: rgba(26, 115, 232, 0.06);
+  border-color: var(--border-strong);
+  color: var(--text-main);
+  background: var(--bg-hover);
 }
 
 .nav-btn .arr {
@@ -326,21 +312,21 @@ onUnmounted(() => {
 }
 
 .user-btn:hover {
-  background: rgba(26, 115, 232, 0.06);
+  background: var(--bg-hover);
 }
 
 .avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1a73e8, #0d9e6c);
+  background: var(--primary-grad);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-size: 13px;
   font-weight: 600;
-  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+  box-shadow: 0 0 0 2px rgba(176, 123, 62, 0.15);
   position: relative;
 }
 
@@ -351,13 +337,14 @@ onUnmounted(() => {
   right: 0;
   width: 8px;
   height: 8px;
-  background: #0d9e6c;
+  background: var(--success);
   border-radius: 50%;
-  border: 2px solid #0a1625;
+  border: 2px solid #fff;
 }
 
 .user-name {
   font-size: 13px;
+  color: var(--text-main);
 }
 
 .dropdown-menu {
@@ -365,11 +352,11 @@ onUnmounted(() => {
   top: calc(100% + 8px);
   left: 0;
   min-width: 170px;
-  background: #0f1d2e;
-  border: 1px solid rgba(26, 115, 232, 0.15);
+  background: var(--bg-white);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 6px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(26, 115, 232, 0.05) inset;
+  box-shadow: var(--shadow);
   z-index: 200;
 }
 
@@ -381,7 +368,7 @@ onUnmounted(() => {
 .dropdown-item {
   padding: 9px 14px;
   font-size: 12px;
-  color: #bcc8d4;
+  color: var(--text-secondary);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s;
@@ -389,22 +376,22 @@ onUnmounted(() => {
 }
 
 .dropdown-item:hover {
-  background: rgba(26, 115, 232, 0.1);
-  color: #e8edf2;
+  background: var(--bg-hover);
+  color: var(--text-main);
 }
 
 .dropdown-item-danger {
-  color: #e54545;
+  color: var(--danger);
 }
 
 .dropdown-item-danger:hover {
-  background: rgba(229, 69, 69, 0.1);
-  color: #ff6b6b;
+  background: var(--danger-tint);
+  color: var(--danger);
 }
 
 .dropdown-divider {
   height: 1px;
-  background: rgba(26, 50, 72, 0.5);
+  background: var(--border);
   margin: 4px 0;
 }
 

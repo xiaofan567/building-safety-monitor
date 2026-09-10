@@ -33,9 +33,9 @@ const chartColors = {
   purple: '#8b5cf6',
   blueLight: '#5a8fd4',
   greenLight: '#2dd4a0',
-  gridLine: 'rgba(26,50,72,0.4)',
-  textDim: '#5a6a7a',
-  textNormal: '#8899aa'
+  gridLine: 'rgba(122,106,85,0.18)',
+  textDim: '#9a8f7f',
+  textNormal: '#6b5f4f'
 }
 
 function initEnvChart() {
@@ -50,13 +50,13 @@ function initEnvChart() {
   envChartInstance.setOption({
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(15,29,46,0.95)',
-      borderColor: 'rgba(26,115,232,0.3)',
-      textStyle: { color: '#e8edf2', fontSize: 12 }
+      backgroundColor: 'rgba(255,255,255,0.98)',
+      borderColor: 'rgba(176,123,62,0.35)',
+      textStyle: { color: '#332e26', fontSize: 12 }
     },
     legend: {
       bottom: 0,
-      textStyle: { color: '#8899aa', fontSize: 11 },
+      textStyle: { color: '#8a7f6f', fontSize: 11 },
       itemWidth: 10,
       itemHeight: 6,
       itemGap: 20
@@ -122,9 +122,9 @@ function initHazardChart() {
   hazardChartInstance.setOption({
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(15,29,46,0.95)',
-      borderColor: 'rgba(26,115,232,0.3)',
-      textStyle: { color: '#e8edf2', fontSize: 12 }
+      backgroundColor: 'rgba(255,255,255,0.98)',
+      borderColor: 'rgba(176,123,62,0.35)',
+      textStyle: { color: '#332e26', fontSize: 12 }
     },
     grid: { top: 10, right: 20, bottom: 24, left: 36 },
     xAxis: {
@@ -175,9 +175,9 @@ function initSprinklerChart() {
   sprinklerChartInstance.setOption({
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(15,29,46,0.95)',
-      borderColor: 'rgba(26,115,232,0.3)',
-      textStyle: { color: '#e8edf2', fontSize: 12 }
+      backgroundColor: 'rgba(255,255,255,0.98)',
+      borderColor: 'rgba(176,123,62,0.35)',
+      textStyle: { color: '#332e26', fontSize: 12 }
     },
     grid: { top: 10, right: 16, bottom: 24, left: 42 },
     xAxis: {
@@ -233,14 +233,14 @@ function initDeviceOverviewChart() {
   deviceOverviewChartInstance.setOption({
     tooltip: {
       trigger: 'item',
-      backgroundColor: 'rgba(15,29,46,0.95)',
-      borderColor: 'rgba(26,115,232,0.3)',
-      textStyle: { color: '#e8edf2', fontSize: 12 },
+      backgroundColor: 'rgba(255,255,255,0.98)',
+      borderColor: 'rgba(176,123,62,0.35)',
+      textStyle: { color: '#332e26', fontSize: 12 },
       formatter: '{b}: {c} 台 ({d}%)'
     },
     legend: {
       bottom: 0,
-      textStyle: { color: '#8899aa', fontSize: 10 },
+      textStyle: { color: '#8a7f6f', fontSize: 10 },
       itemWidth: 8,
       itemHeight: 8,
       itemGap: 12
@@ -252,7 +252,7 @@ function initDeviceOverviewChart() {
       avoidLabelOverlap: false,
       itemStyle: {
         borderRadius: 4,
-        borderColor: '#0f1d2e',
+        borderColor: '#ffffff',
         borderWidth: 3
       },
       label: {
@@ -263,7 +263,7 @@ function initDeviceOverviewChart() {
           show: true,
           fontSize: 14,
           fontWeight: 'bold',
-          color: '#e8edf2'
+          color: '#332e26'
         },
         scaleSize: 8
       },
@@ -284,13 +284,13 @@ function initDeviceStatsChart() {
   deviceStatsChartInstance.setOption({
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(15,29,46,0.95)',
-      borderColor: 'rgba(26,115,232,0.3)',
-      textStyle: { color: '#e8edf2', fontSize: 12 }
+      backgroundColor: 'rgba(255,255,255,0.98)',
+      borderColor: 'rgba(176,123,62,0.35)',
+      textStyle: { color: '#332e26', fontSize: 12 }
     },
     legend: {
       bottom: 0,
-      textStyle: { color: '#8899aa', fontSize: 11 },
+      textStyle: { color: '#8a7f6f', fontSize: 11 },
       itemWidth: 10,
       itemHeight: 6,
       itemGap: 20
@@ -593,15 +593,16 @@ onUnmounted(() => {
   height: 100%;
   overflow-y: auto;
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-page);
 }
 
 .dashboard::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 
 .dashboard::-webkit-scrollbar-thumb {
-  background: rgba(26, 115, 232, 0.2);
-  border-radius: 2px;
+  background: rgba(176, 123, 62, 0.25);
+  border-radius: 3px;
 }
 
 .page-header {
@@ -613,9 +614,9 @@ onUnmounted(() => {
 
 .page-header h2 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #e8edf2;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-strong);
   letter-spacing: 1px;
 }
 
@@ -624,15 +625,15 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #5a6a7a;
+  color: var(--text-muted);
 }
 
 .meta-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #0d9e6c;
-  box-shadow: 0 0 6px rgba(13, 158, 108, 0.5);
+  background: var(--success);
+  box-shadow: 0 0 6px rgba(77, 133, 71, 0.5);
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -642,7 +643,7 @@ onUnmounted(() => {
 }
 
 .meta-time {
-  color: #3a5068;
+  color: var(--text-faint);
 }
 
 .stats-row {
@@ -653,38 +654,21 @@ onUnmounted(() => {
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #0f1d2e 0%, #0a1625 100%);
-  border: 1px solid rgba(26, 50, 72, 0.5);
-  border-radius: 10px;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
   padding: 18px 20px;
   display: flex;
   align-items: center;
   gap: 14px;
   transition: all 0.25s;
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.3), transparent);
-  opacity: 0;
-  transition: opacity 0.3s;
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-card:hover {
-  border-color: rgba(26, 115, 232, 0.3);
+  border-color: var(--border-strong);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-}
-
-.stat-card:hover::before {
-  opacity: 1;
+  box-shadow: var(--shadow);
 }
 
 .stat-icon {
@@ -705,7 +689,7 @@ onUnmounted(() => {
 .stat-val {
   font-size: 28px;
   font-weight: 700;
-  color: #e8edf2;
+  color: var(--text-strong);
   line-height: 1.1;
   display: flex;
   align-items: baseline;
@@ -715,12 +699,12 @@ onUnmounted(() => {
 .stat-unit {
   font-size: 14px;
   font-weight: 500;
-  color: #5a6a7a;
+  color: var(--text-muted);
 }
 
 .stat-lbl {
   font-size: 12px;
-  color: #5a6a7a;
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
@@ -733,13 +717,13 @@ onUnmounted(() => {
 }
 
 .stat-trend.up {
-  background: rgba(13, 158, 108, 0.12);
-  color: #0d9e6c;
+  background: var(--success-tint);
+  color: var(--success);
 }
 
 .stat-trend.down {
-  background: rgba(229, 69, 69, 0.12);
-  color: #e54545;
+  background: var(--danger-tint);
+  color: var(--danger);
 }
 
 .dashboard-grid {
@@ -749,16 +733,17 @@ onUnmounted(() => {
 }
 
 .panel {
-  background: #0f1d2e;
-  border: 1px solid rgba(26, 50, 72, 0.5);
-  border-radius: 10px;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
   padding: 18px;
   margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
   transition: border-color 0.25s;
 }
 
 .panel:hover {
-  border-color: rgba(26, 115, 232, 0.2);
+  border-color: var(--border-strong);
 }
 
 .panel:last-child {
@@ -775,7 +760,7 @@ onUnmounted(() => {
 .panel-title {
   font-size: 14px;
   font-weight: 600;
-  color: #e8edf2;
+  color: var(--text-main);
   position: relative;
   padding-left: 14px;
 }
@@ -788,7 +773,7 @@ onUnmounted(() => {
   transform: translateY(-50%);
   width: 3px;
   height: 16px;
-  background: linear-gradient(180deg, #1a73e8, #0d9e6c);
+  background: var(--primary-grad);
   border-radius: 2px;
 }
 
@@ -797,7 +782,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: #5a6a7a;
+  color: var(--text-muted);
 }
 
 .legend-dot {
@@ -809,13 +794,13 @@ onUnmounted(() => {
 
 .panel-link {
   font-size: 11px;
-  color: #5a8fd4;
+  color: var(--primary-text);
   cursor: pointer;
   transition: color 0.2s;
 }
 
 .panel-link:hover {
-  color: #1a73e8;
+  color: var(--primary);
 }
 
 .env-grid {
@@ -825,40 +810,40 @@ onUnmounted(() => {
 }
 
 .env-item {
-  background: #0a1625;
-  border: 1px solid rgba(26, 50, 72, 0.4);
-  border-radius: 8px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
   padding: 14px 10px;
   text-align: center;
   transition: all 0.25s;
 }
 
 .env-item:hover {
-  border-color: rgba(26, 115, 232, 0.3);
-  background: #0d1b2a;
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
 }
 
 .env-item.env-warn {
-  border-color: rgba(229, 69, 69, 0.3);
-  box-shadow: 0 0 0 1px rgba(229, 69, 69, 0.08) inset;
+  border-color: rgba(194, 91, 91, 0.4);
+  box-shadow: 0 0 0 1px rgba(194, 91, 91, 0.08) inset;
 }
 
 .env-val {
   font-size: 24px;
   font-weight: 700;
-  color: #e8edf2;
+  color: var(--text-strong);
   line-height: 1.2;
 }
 
 .env-unit {
-  color: #3a5068;
+  color: var(--text-faint);
   font-size: 11px;
   font-weight: 500;
 }
 
 .env-label {
   font-size: 11px;
-  color: #5a6a7a;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
@@ -871,13 +856,13 @@ onUnmounted(() => {
 }
 
 .env-status.normal {
-  background: rgba(13, 158, 108, 0.1);
-  color: #0d9e6c;
+  background: var(--success-tint);
+  color: var(--success);
 }
 
 .env-status.warn {
-  background: rgba(229, 69, 69, 0.1);
-  color: #e54545;
+  background: var(--danger-tint);
+  color: var(--danger);
 }
 
 .chart-container {
@@ -899,11 +884,11 @@ onUnmounted(() => {
 }
 
 .simple-table-wrap::-webkit-scrollbar {
-  width: 3px;
+  width: 4px;
 }
 
 .simple-table-wrap::-webkit-scrollbar-thumb {
-  background: rgba(26, 115, 232, 0.15);
+  background: rgba(176, 123, 62, 0.2);
   border-radius: 2px;
 }
 
@@ -914,12 +899,12 @@ onUnmounted(() => {
 }
 
 .simple-table th {
-  background: #0a1625;
+  background: var(--bg-muted);
   padding: 10px 12px;
   text-align: left;
-  color: #5a6a7a;
-  font-weight: 500;
-  border-bottom: 1px solid rgba(26, 50, 72, 0.5);
+  color: var(--text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
   white-space: nowrap;
   position: sticky;
   top: 0;
@@ -927,8 +912,8 @@ onUnmounted(() => {
 
 .simple-table td {
   padding: 10px 12px;
-  border-bottom: 1px solid rgba(26, 50, 72, 0.25);
-  color: #bcc8d4;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-main);
   white-space: nowrap;
 }
 
@@ -937,7 +922,7 @@ onUnmounted(() => {
 }
 
 .simple-table tbody tr:hover {
-  background: rgba(26, 115, 232, 0.04);
+  background: var(--bg-hover);
 }
 
 .tag {
@@ -949,22 +934,22 @@ onUnmounted(() => {
 }
 
 .tag-green {
-  background: rgba(13, 158, 108, 0.12);
-  color: #0d9e6c;
+  background: var(--success-tint);
+  color: var(--success);
 }
 
 .tag-red {
-  background: rgba(229, 69, 69, 0.12);
-  color: #e54545;
+  background: var(--danger-tint);
+  color: var(--danger);
 }
 
 .tag-orange {
-  background: rgba(245, 166, 35, 0.12);
-  color: #f5a623;
+  background: var(--warning-tint);
+  color: var(--warning);
 }
 
 .tag-blue {
-  background: rgba(26, 115, 232, 0.12);
-  color: #1a73e8;
+  background: var(--info-tint);
+  color: var(--info);
 }
 </style>

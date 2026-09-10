@@ -81,8 +81,8 @@ async function handleLogin() {
           <svg viewBox="0 0 24 24" fill="none">
             <defs>
               <linearGradient id="logoGrad" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#1a73e8" />
-                <stop offset="100%" stop-color="#0d9e6c" />
+                <stop offset="0%" stop-color="#c9a26b" />
+                <stop offset="100%" stop-color="#b07b3e" />
               </linearGradient>
             </defs>
             <path d="M12 2L4 5.5V11C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 11V5.5L12 2Z" fill="url(#logoGrad)" opacity="0.15" />
@@ -158,7 +158,10 @@ async function handleLogin() {
   padding: 24px;
   overflow: hidden;
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  background: #060d17;
+  background:
+    radial-gradient(700px 480px at 15% 12%, rgba(201, 162, 107, 0.22), transparent 60%),
+    radial-gradient(680px 460px at 88% 85%, rgba(176, 123, 62, 0.16), transparent 60%),
+    #f5f2ec;
 }
 
 .bg-layer {
@@ -171,8 +174,8 @@ async function handleLogin() {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(26, 115, 232, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(26, 115, 232, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(176, 123, 62, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(176, 123, 62, 0.05) 1px, transparent 1px);
   background-size: 60px 60px;
   mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 30%, transparent 70%);
 }
@@ -181,7 +184,7 @@ async function handleLogin() {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
-  opacity: 0.4;
+  opacity: 0.5;
 }
 
 .glow-1 {
@@ -189,7 +192,7 @@ async function handleLogin() {
   height: 500px;
   top: -180px;
   left: -120px;
-  background: radial-gradient(circle, rgba(26, 115, 232, 0.5), transparent 65%);
+  background: radial-gradient(circle, rgba(201, 162, 107, 0.45), transparent 65%);
   animation: floatGlow 12s ease-in-out infinite;
 }
 
@@ -198,7 +201,7 @@ async function handleLogin() {
   height: 400px;
   bottom: -140px;
   right: -80px;
-  background: radial-gradient(circle, rgba(13, 158, 108, 0.4), transparent 65%);
+  background: radial-gradient(circle, rgba(176, 123, 62, 0.35), transparent 65%);
   animation: floatGlow 14s ease-in-out infinite reverse;
 }
 
@@ -207,7 +210,7 @@ async function handleLogin() {
   height: 300px;
   top: 45%;
   right: 15%;
-  background: radial-gradient(circle, rgba(26, 115, 232, 0.3), transparent 65%);
+  background: radial-gradient(circle, rgba(214, 178, 132, 0.3), transparent 65%);
   animation: floatGlow 10s ease-in-out infinite 2s;
 }
 
@@ -226,7 +229,7 @@ async function handleLogin() {
   position: absolute;
   width: 2px;
   height: 2px;
-  background: #1a73e8;
+  background: #c9a26b;
   border-radius: 50%;
   opacity: 0;
   animation: particleFloat 8s ease-in-out infinite;
@@ -234,7 +237,7 @@ async function handleLogin() {
 
 @keyframes particleFloat {
   0% { opacity: 0; transform: translateY(0); }
-  10% { opacity: 0.6; }
+  10% { opacity: 0.5; }
   90% { opacity: 0; }
   100% { opacity: 0; transform: translateY(-60px); }
 }
@@ -244,15 +247,14 @@ async function handleLogin() {
   z-index: 2;
   width: 420px;
   max-width: 100%;
-  background: rgba(15, 29, 46, 0.85);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(26, 115, 232, 0.15);
-  border-radius: 16px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
   padding: 44px 40px 32px;
   box-shadow:
-    0 4px 32px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(26, 115, 232, 0.08) inset,
-    0 1px 0 rgba(255, 255, 255, 0.03) inset;
+    0 8px 40px rgba(120, 95, 60, 0.20),
+    0 0 0 1px rgba(176, 123, 62, 0.06) inset;
   overflow: hidden;
 }
 
@@ -262,8 +264,8 @@ async function handleLogin() {
   left: 50%;
   transform: translateX(-50%);
   width: 300px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.6), rgba(13, 158, 108, 0.4), transparent);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #c9a26b, #b07b3e, transparent);
 }
 
 .login-header {
@@ -286,7 +288,7 @@ async function handleLogin() {
   inset: -4px;
   border-radius: 18px;
   border: 2px solid transparent;
-  background: linear-gradient(135deg, rgba(26, 115, 232, 0.3), rgba(13, 158, 108, 0.3)) border-box;
+  background: linear-gradient(135deg, rgba(201, 162, 107, 0.35), rgba(176, 123, 62, 0.35)) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -296,21 +298,21 @@ async function handleLogin() {
 .logo-badge svg {
   width: 36px;
   height: 36px;
-  filter: drop-shadow(0 0 8px rgba(26, 115, 232, 0.4));
+  filter: drop-shadow(0 0 8px rgba(201, 162, 107, 0.4));
 }
 
 .login-header h1 {
   margin: 0;
   font-size: 22px;
   font-weight: 700;
-  color: #e8edf2;
+  color: var(--text-strong);
   letter-spacing: 2px;
 }
 
 .login-header p {
   margin: 8px 0 0;
   font-size: 11px;
-  color: #5a6a7a;
+  color: var(--text-muted);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
@@ -320,34 +322,34 @@ async function handleLogin() {
 }
 
 .login-form :deep(.el-input__wrapper) {
-  background: rgba(10, 22, 37, 0.6);
-  border-radius: 8px;
+  background: var(--bg-soft);
+  border-radius: 9px;
   padding: 4px 14px;
-  box-shadow: 0 0 0 1px rgba(26, 50, 72, 0.5) inset;
+  box-shadow: 0 0 0 1px var(--border) inset;
   transition: all 0.25s;
 }
 
 .login-form :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px rgba(26, 115, 232, 0.3) inset;
+  box-shadow: 0 0 0 1px var(--border-strong) inset;
 }
 
 .login-form :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #1a73e8 inset, 0 0 0 3px rgba(26, 115, 232, 0.1);
-  background: rgba(10, 22, 37, 0.8);
+  box-shadow: 0 0 0 1px var(--primary) inset, 0 0 0 3px rgba(176, 123, 62, 0.12);
+  background: var(--bg-white);
 }
 
 .login-form :deep(.el-input__inner) {
-  color: #e8edf2;
+  color: var(--text-main);
 }
 
 .login-form :deep(.el-input__inner::placeholder) {
-  color: #3a5068;
+  color: var(--text-faint);
 }
 
 .field-icon {
   width: 18px;
   height: 18px;
-  color: #5a6a7a;
+  color: var(--text-muted);
 }
 
 .login-options {
@@ -358,19 +360,19 @@ async function handleLogin() {
 }
 
 .login-options :deep(.el-checkbox__label) {
-  color: #8899aa;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
 .forgot {
   font-size: 13px;
-  color: #5a8fd4;
+  color: var(--primary-text);
   cursor: pointer;
   transition: color 0.2s;
 }
 
 .forgot:hover {
-  color: #1a73e8;
+  color: var(--primary);
 }
 
 .login-btn {
@@ -382,7 +384,7 @@ async function handleLogin() {
   gap: 8px;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+  background: var(--primary-grad);
   color: #fff;
   font-size: 16px;
   font-weight: 600;
@@ -391,6 +393,7 @@ async function handleLogin() {
   transition: all 0.25s;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 6px 16px rgba(176, 123, 62, 0.3);
 }
 
 .login-btn::before {
@@ -402,14 +405,13 @@ async function handleLogin() {
 }
 
 .login-btn:hover {
-  background: linear-gradient(135deg, #2b85f0 0%, #1a6dd4 100%);
-  box-shadow: 0 4px 20px rgba(26, 115, 232, 0.4);
   transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(176, 123, 62, 0.38);
 }
 
 .login-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+  box-shadow: 0 4px 10px rgba(176, 123, 62, 0.3);
 }
 
 .login-btn:disabled {
@@ -436,6 +438,6 @@ async function handleLogin() {
   margin-top: 28px;
   text-align: center;
   font-size: 12px;
-  color: #3a5068;
+  color: var(--text-faint);
 }
 </style>
