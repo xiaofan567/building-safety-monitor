@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qst.smartbuildings.mapper.environment.SpraySystemMapper">
+
+    <!-- 分页查询喷淋系统记录 -->
+    <select id="selectByPage" parameterType="com.qst.smartbuildings.entity.param.SpraySystemParam" resultType="com.qst.smartbuildings.entity.SpraySystem">
+        SELECT
+            ss.*,
+            mp.point_name AS point_name,
+            ea.asset_name AS asset_name,
+            loc.location_name AS asset_location
+        FROM
+            spray_system ss
+            LEFT JOIN equipment_monitor_point mp ON ss.monitor_point_id = mp.id
+            LEFT JOIN equipment_assets ea ON ss.equipment_id = ea.asset_id
+            LEFT JOIN equipment_location loc ON ss.location_id = loc.location_id
+        WHERE
+            1 = 1
+        <!-- 设备名称模糊查询 -->
+        <if test="data.assetName != null and data.assetName != ''">
+            AND ea.asset_name LIKE CONCAT('%', #{data.assetName}, '%')
+        </if>
+        <!-- 位置名称模糊查询 -->
+        <if test="data.locationName != null and data.locationName != ''">
+            AND loc.location_name LIKE CONCAT('%', #{data.locationName}, '%')
+        </if>
+        <!-- 操作类型精确查询 -->
+        <if test="data.operationType != null and data.operationType != ''">
+            AND ss.operation_type = #{data.operationType}
+        </if>
+        <!-- 开始时间过滤 -->
+        <if test="data.startTime != null">
+            AND ss.operation_time <![CDATA[>=]]> #{data.startTime}
+        </if>
+        <!-- 结束时间过滤 -->
+        <if test="data.endTime != null">
+            AND ss.operation_time <![CDATA[<=]]> #{data.endTime}
+        </if>
+        <!-- 排序：默认按操作时间倒序 -->
+        ORDER BY
+            ss.operation_time DESC
+    </select>
+
+</mapper>
