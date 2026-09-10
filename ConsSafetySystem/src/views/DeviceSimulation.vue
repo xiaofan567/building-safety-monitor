@@ -157,6 +157,16 @@ const logContentRef = ref(null)
 // ---------------- 3D 状态（塔吊模型） ----------------
 const threeContainer = ref(null)
 const isTower = computed(() => currentEditingDevice.value === 1 || currentEditingDevice.value === 2)
+// 3D 交互模式：false=旋转视角，true=拖动模型
+const dragMode = ref(false)
+
+function setDragMode(v) {
+  dragMode.value = v
+  if (controls) {
+    controls.enableRotate = !v
+    controls.domElement.style.cursor = v ? 'grab' : 'default'
+  }
+}
 
 // 角度转弧度
 function degreesToRadians(degrees) {
@@ -199,6 +209,7 @@ const rotationCenter = new THREE.Vector3(0, -14, 14)
 let showTC = false // 是否播放动画
 let animationFrame = 601 // 当前动画帧（601 表示未播放）
 let animId = null
+let modelDragged = false // 是否被用户手动拖动过
 
 // 塔吊参数平均值
 let liftingPointHeightAvg = 0
@@ -308,8 +319,9 @@ function confirmDisconnect() {
 
 // ---------------- 3D 模型初始化与动画 ----------------
 function init3D() {
+  modelDragged = false // 每次重建场景都从默认姿态开始
   scene = new THREE.Scene()
-  scene.background = new THREE.Color(0xf0f0f0)
+  scene.background = new THREE.Color(0xFAF6EE)
   camera = new THREE.PerspectiveCamera(75, 500 / 480, 0.1, 2000)
   camera.position.set(50, 30, 50)
   renderer = new THREE.WebGLRenderer({ antialias: true })
@@ -318,6 +330,8 @@ function init3D() {
   // 控制器，启用阻尼效果
   controls = new THREE.OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
+  // 启用"左键拖动模型"：空处拖动旋转视角，抓握模型可平移到拖动位置
+  enableModelDrag()
   // 光源，双光源避免暗面
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
   scene.add(ambientLight)
@@ -364,14 +378,66 @@ function init3D() {
   )
 }
 
+// 拖拽交互：由"旋转/拖动"模式按钮切换。
+// 旋转模式 → OrbitControls 左键旋转视角；拖动模式 → 左键在地面平面平移塔吊
+function enableModelDrag() {
+  const dom = renderer.domElement
+  const raycaster = new THREE.Raycaster()
+  const pointer = new THREE.Vector2()
+  // 地面平面（y=0），用于把模型约束在"地面"上水平拖动
+  const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
+  const groundPoint = new THREE.Vector3()
+  const dragOffset = new THREE.Vector3()
+  let dragging = false
+
+  function setPointer(e) {
+    const rect = dom.getBoundingClientRect()
+    pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1
+    pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1
+  }
+
+  dom.addEventListener('pointerdown', (e) => {
+    if (!plane002 || !dragMode.value || e.button !== 0) return
+    e.preventDefault()
+    setPointer(e)
+    raycaster.setFromCamera(pointer, camera)
+    if (!raycaster.ray.intersectPlane(groundPlane, groundPoint)) return
+    dragging = true
+    modelDragged = true
+    dom.style.cursor = 'grabbing'
+    dragOffset.subVectors(plane002.position, groundPoint)
+  })
+
+  dom.addEventListener('pointermove', (e) => {
+    if (!dragging) return
+    e.preventDefault()
+    setPointer(e)
+    raycaster.setFromCamera(pointer, camera)
+    if (raycaster.ray.intersectPlane(groundPlane, groundPoint)) {
+      plane002.position.set(groundPoint.x + dragOffset.x, plane002.position.y, groundPoint.z + dragOffset.z)
+    }
+  })
+
+  const onUp = () => {
+    if (dragging) {
+      dragging = false
+      dom.style.cursor = dragMode.value ? 'grab' : 'default'
+    }
+  }
+  dom.addEventListener('pointerup', onUp)
+  dom.addEventListener('pointerleave', onUp)
+}
+
 // 更新塔吊旋转角度
 function updateRotationAngle(targetRadians) {
   if (!plane002) return
+  // 若用户拖动过模型，则以拖放后的模型中心为旋转轴，避免被拉回原位
+  const pivot = modelDragged ? plane002.position : rotationCenter
   const delta = targetRadians - plane002.rotation.y
-  const offset = new THREE.Vector3().subVectors(plane002.position, rotationCenter)
+  const offset = new THREE.Vector3().subVectors(plane002.position, pivot)
   offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), delta)
   plane002.rotation.y = targetRadians
-  plane002.position.copy(rotationCenter).add(offset)
+  plane002.position.copy(pivot).add(offset)
 }
 
 // 更新小车位置和吊钩
@@ -751,6 +817,19 @@ onUnmounted(() => {
         <!-- 塔吊 3D 模型展示区（仅在塔吊设备时显示） -->
         <div v-if="isTower" class="modal-sidebar">
           <h3 class="config-section-title center">塔吊3D模型展示</h3>
+          <div class="three-toolbar">
+            <button
+              class="mode-btn"
+              :class="{ active: !dragMode }"
+              @click="setDragMode(false)"
+            >旋转</button>
+            <button
+              class="mode-btn"
+              :class="{ active: dragMode }"
+              @click="setDragMode(true)"
+            >拖动</button>
+          </div>
+          <div class="three-hint">{{ dragMode ? '按住左键拖动塔吊移动位置' : '按住左键旋转视角 · 滚轮缩放' }}</div>
           <div ref="threeContainer" class="three-container"></div>
         </div>
       </div>
@@ -785,9 +864,9 @@ onUnmounted(() => {
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
   overflow: hidden;
   background:
-    radial-gradient(1200px 600px at 8% -10%, rgba(26, 115, 232, 0.16), transparent 60%),
-    radial-gradient(1000px 520px at 100% 0%, rgba(13, 158, 108, 0.12), transparent 55%),
-    linear-gradient(180deg, #0a1422 0%, #0d1d33 55%, #08111f 100%);
+    radial-gradient(900px 420px at 6% -8%, rgba(201, 162, 107, 0.16), transparent 60%),
+    radial-gradient(800px 400px at 100% 0%, rgba(201, 162, 107, 0.10), transparent 55%),
+    var(--bg-page);
 }
 
 /* ---------- 顶部标题 ---------- */
@@ -810,15 +889,12 @@ onUnmounted(() => {
   font-size: 20px;
   font-weight: 800;
   letter-spacing: 1px;
-  background: linear-gradient(90deg, #7ab4ff 0%, #cfe4ff 45%, #4ade80 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-strong);
 }
 
 .page-subtitle {
   font-size: 12px;
-  color: #5a7ea0;
+  color: var(--text-muted);
   letter-spacing: 0.5px;
 }
 
@@ -827,17 +903,18 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 7px 14px;
-  border: 1px solid rgba(26, 50, 72, 0.6);
-  background: rgba(10, 22, 37, 0.6);
+  border: 1px solid var(--border);
+  background: var(--bg-white);
   border-radius: 30px;
   font-size: 12px;
-  color: #7d8fa3;
+  color: var(--text-muted);
   transition: border-color 0.3s, color 0.3s;
+  box-shadow: var(--shadow-sm);
 }
 
 .ws-status.connected {
-  border-color: rgba(13, 158, 108, 0.5);
-  color: #4ade80;
+  border-color: rgba(77, 133, 71, 0.45);
+  color: var(--success);
 }
 
 .ws-text {
@@ -849,12 +926,12 @@ onUnmounted(() => {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #5a6a7a;
+  background: var(--text-faint);
   transition: background 0.3s;
 }
 
 .ws-status.connected .ws-dot {
-  background: #0d9e6c;
+  background: var(--success);
 }
 
 .ws-status.connected .ws-dot::after {
@@ -862,7 +939,7 @@ onUnmounted(() => {
   position: absolute;
   inset: -4px;
   border-radius: 50%;
-  border: 2px solid rgba(13, 158, 108, 0.4);
+  border: 2px solid rgba(77, 133, 71, 0.4);
   animation: pulse-ring 1.8s ease-out infinite;
 }
 
@@ -881,14 +958,13 @@ onUnmounted(() => {
 
 .panel {
   position: relative;
-  background: linear-gradient(180deg, rgba(20, 40, 62, 0.55), rgba(10, 22, 37, 0.7));
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(26, 50, 72, 0.55);
+  background: var(--bg-white);
+  border: 1px solid var(--border);
   border-radius: 14px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-sm);
 }
 
 .status-panel {
@@ -911,15 +987,15 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  border-bottom: 1px solid rgba(26, 50, 72, 0.5);
-  background: rgba(26, 115, 232, 0.05);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-soft);
   flex-shrink: 0;
 }
 
 .panel-title {
   font-size: 14px;
   font-weight: 600;
-  color: #e8f1fb;
+  color: var(--text-main);
   position: relative;
   padding-left: 14px;
 }
@@ -932,22 +1008,21 @@ onUnmounted(() => {
   transform: translateY(-50%);
   width: 3px;
   height: 16px;
-  background: linear-gradient(180deg, #3b8dff, #0d9e6c);
+  background: var(--primary-grad);
   border-radius: 2px;
-  box-shadow: 0 0 8px rgba(26, 115, 232, 0.6);
 }
 
 .panel-count {
   font-size: 11px;
-  color: #6e88a2;
+  color: var(--primary-text);
   padding: 2px 10px;
   border-radius: 12px;
-  background: rgba(26, 115, 232, 0.1);
-  border: 1px solid rgba(26, 115, 232, 0.2);
+  background: var(--primary-tint);
+  border: 1px solid rgba(176, 123, 62, 0.25);
 }
 
 .panel-empty {
-  color: #3a5068;
+  color: var(--text-faint);
   font-size: 13px;
   text-align: center;
   padding: 40px 0;
@@ -966,13 +1041,13 @@ onUnmounted(() => {
 .status-list::-webkit-scrollbar,
 .device-grid::-webkit-scrollbar,
 .log-content::-webkit-scrollbar {
-  width: 5px;
+  width: 6px;
 }
 
 .status-list::-webkit-scrollbar-thumb,
 .device-grid::-webkit-scrollbar-thumb,
 .log-content::-webkit-scrollbar-thumb {
-  background: rgba(26, 115, 232, 0.2);
+  background: rgba(176, 123, 62, 0.25);
   border-radius: 4px;
 }
 
@@ -990,8 +1065,8 @@ onUnmounted(() => {
 }
 
 .status-item.connected {
-  background: linear-gradient(135deg, rgba(13, 158, 108, 0.14), rgba(13, 158, 108, 0.03));
-  border-color: rgba(13, 158, 108, 0.4);
+  background: var(--success-tint);
+  border-color: rgba(77, 133, 71, 0.35);
 }
 
 .status-item.connected::before {
@@ -1001,12 +1076,12 @@ onUnmounted(() => {
   top: 0;
   bottom: 0;
   width: 3px;
-  background: linear-gradient(180deg, #0d9e6c, #34d399);
+  background: var(--success);
 }
 
 .status-item.disconnected {
-  background: rgba(10, 22, 37, 0.6);
-  border-color: rgba(26, 50, 72, 0.5);
+  background: var(--bg-white);
+  border-color: var(--border);
 }
 
 .status-item-info {
@@ -1021,13 +1096,13 @@ onUnmounted(() => {
   align-items: center;
   gap: 7px;
   font-size: 13px;
-  color: #b8c6d6;
+  color: var(--text-secondary);
   font-weight: 500;
   white-space: nowrap;
 }
 
 .status-item.connected .status-name {
-  color: #e8f1fb;
+  color: var(--text-main);
 }
 
 .status-name::before {
@@ -1035,12 +1110,12 @@ onUnmounted(() => {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #3a5068;
+  background: var(--text-faint);
 }
 
 .status-item.connected .status-name::before {
-  background: #4ade80;
-  box-shadow: 0 0 6px rgba(74, 222, 128, 0.8);
+  background: var(--success);
+  box-shadow: 0 0 6px rgba(77, 133, 71, 0.7);
 }
 
 .status-badge {
@@ -1052,30 +1127,29 @@ onUnmounted(() => {
 }
 
 .status-badge.on {
-  background: rgba(13, 158, 108, 0.16);
-  color: #4ade80;
+  background: var(--success-tint);
+  color: var(--success);
 }
 
 .status-badge.off {
-  background: rgba(26, 50, 72, 0.4);
-  color: #5a6a7a;
+  background: var(--bg-muted);
+  color: var(--text-muted);
 }
 
 .disconnect-btn {
   flex-shrink: 0;
   padding: 4px 10px;
   font-size: 11px;
-  border: 1px solid rgba(229, 69, 69, 0.4);
+  border: 1px solid rgba(194, 91, 91, 0.4);
   background: transparent;
-  color: #ff6b6b;
+  color: var(--danger);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .disconnect-btn:hover {
-  background: rgba(229, 69, 69, 0.12);
-  box-shadow: 0 0 10px rgba(229, 69, 69, 0.15);
+  background: var(--danger-tint);
 }
 
 /* ---------- 设备控制 ---------- */
@@ -1110,26 +1184,25 @@ onUnmounted(() => {
 }
 
 .device-button.running {
-  background: linear-gradient(135deg, rgba(13, 158, 108, 0.2), rgba(13, 158, 108, 0.05));
-  border-color: rgba(13, 158, 108, 0.5);
-  color: #4ade80;
-  box-shadow: inset 0 0 20px rgba(13, 158, 108, 0.08), 0 4px 14px rgba(13, 158, 108, 0.12);
+  background: linear-gradient(135deg, var(--success-tint), rgba(77, 133, 71, 0.04));
+  border-color: rgba(77, 133, 71, 0.4);
+  color: var(--success);
 }
 
 .device-button.stopped {
-  background: rgba(10, 22, 37, 0.6);
-  border-color: rgba(26, 50, 72, 0.5);
-  color: #7d8fa3;
+  background: var(--bg-white);
+  border-color: var(--border);
+  color: var(--text-muted);
 }
 
 .device-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow);
 }
 
 .device-button.stopped:hover {
-  border-color: rgba(26, 115, 232, 0.4);
-  color: #b8c6d6;
+  border-color: var(--border-strong);
+  color: var(--text-main);
 }
 
 .device-icon {
@@ -1140,14 +1213,14 @@ onUnmounted(() => {
   width: 46px;
   height: 46px;
   border-radius: 12px;
-  background: rgba(26, 115, 232, 0.1);
-  border: 1px solid rgba(26, 115, 232, 0.15);
+  background: var(--primary-tint);
+  border: 1px solid rgba(176, 123, 62, 0.18);
   transition: all 0.25s;
 }
 
 .device-button.running .device-icon {
-  background: rgba(13, 158, 108, 0.15);
-  border-color: rgba(13, 158, 108, 0.3);
+  background: var(--success-tint);
+  border-color: rgba(77, 133, 71, 0.3);
 }
 
 .device-button-inner {
@@ -1159,14 +1232,14 @@ onUnmounted(() => {
 .device-name {
   font-size: 13px;
   font-weight: 600;
-  color: #eaf2fb;
+  color: var(--text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .device-button.stopped .device-name {
-  color: #b8c6d6;
+  color: var(--text-main);
 }
 
 .device-status-text {
@@ -1177,19 +1250,19 @@ onUnmounted(() => {
 
 .edit-btn {
   width: 56px;
-  border: 1px solid rgba(26, 115, 232, 0.3);
+  border: 1px solid rgba(176, 123, 62, 0.35);
   border-radius: 12px;
-  background: rgba(26, 115, 232, 0.12);
-  color: #7aa7e8;
+  background: var(--primary-tint);
+  color: var(--primary-text);
   cursor: pointer;
   font-size: 12px;
   transition: all 0.2s;
 }
 
 .edit-btn:hover {
-  background: rgba(26, 115, 232, 0.25);
-  color: #8ec2ff;
-  border-color: rgba(26, 115, 232, 0.5);
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
 }
 
 /* ---------- 通信日志 ---------- */
@@ -1206,24 +1279,24 @@ onUnmounted(() => {
 .log-btn {
   padding: 5px 12px;
   font-size: 12px;
-  background: rgba(10, 22, 37, 0.7);
-  border: 1px solid rgba(26, 50, 72, 0.5);
-  color: #7d8fa3;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .log-btn:hover {
-  color: #b8c6d6;
-  border-color: rgba(26, 115, 232, 0.35);
+  color: var(--text-main);
+  border-color: var(--border-strong);
 }
 
 .log-content {
   flex: 1;
   overflow-y: auto;
   padding: 12px 16px;
-  background: rgba(5, 13, 24, 0.6);
+  background: var(--bg-soft);
   font-family: 'Consolas', 'Courier New', monospace;
   font-size: 12px;
   line-height: 1.8;
@@ -1239,40 +1312,40 @@ onUnmounted(() => {
 }
 
 .log-entry:hover {
-  background: rgba(26, 115, 232, 0.06);
+  background: var(--bg-hover);
 }
 
 .log-time {
-  color: #3a5068;
+  color: var(--text-faint);
   flex-shrink: 0;
 }
 
 .log-message {
-  color: #b8c6d6;
+  color: var(--text-main);
 }
 
 .log-entry.sent .log-message {
-  color: #68d391;
+  color: #2e7d4f;
 }
 
 .log-entry.received .log-message {
-  color: #90cdf4;
+  color: #386fa4;
 }
 
 .log-entry.success .log-message {
-  color: #4ade80;
+  color: var(--success);
 }
 
 .log-entry.error .log-message {
-  color: #fc8181;
+  color: var(--danger);
 }
 
 .log-entry.warning .log-message {
-  color: #f6e05e;
+  color: var(--warning);
 }
 
 .log-empty {
-  color: #3a5068;
+  color: var(--text-faint);
   text-align: center;
   padding: 30px 0;
 }
@@ -1292,7 +1365,7 @@ onUnmounted(() => {
 .modal-sidebar {
   width: 520px;
   flex-shrink: 0;
-  border-left: 1px solid rgba(26, 50, 72, 0.5);
+  border-left: 1px solid var(--border);
   padding-left: 20px;
 }
 
@@ -1300,12 +1373,12 @@ onUnmounted(() => {
   width: 500px;
   height: 480px;
   background:
-    radial-gradient(400px 300px at 50% 0%, rgba(26, 115, 232, 0.1), transparent 70%),
-    rgba(5, 13, 24, 0.8);
-  border: 1px solid rgba(26, 115, 232, 0.25);
+    radial-gradient(400px 300px at 50% 0%, rgba(201, 162, 107, 0.18), transparent 72%),
+    var(--bg-soft);
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: inset 0 0 40px rgba(26, 115, 232, 0.1), 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 30px rgba(176, 123, 62, 0.08), var(--shadow-sm);
 }
 
 .three-container canvas {
@@ -1318,13 +1391,51 @@ onUnmounted(() => {
   padding-left: 0;
 }
 
+.three-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0 0 8px;
+}
+
+.three-toolbar {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.mode-btn {
+  min-width: 84px;
+  padding: 7px 0;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.mode-btn.active {
+  background: var(--primary-grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(176, 123, 62, 0.25);
+}
+
 .config-section-title {
   font-size: 13px;
   font-weight: 600;
-  color: #7ab4ff;
+  color: var(--primary-text);
   margin: 6px 0 14px;
   padding-left: 10px;
-  border-left: 3px solid #3b8dff;
+  border-left: 3px solid var(--primary);
 }
 
 .range-inputs {
@@ -1338,138 +1449,138 @@ onUnmounted(() => {
 }
 
 .range-sep {
-  color: #5a6a7a;
+  color: var(--text-muted);
 }
 
 .confirm-text {
-  color: #b8c6d6;
+  color: var(--text-main);
   font-size: 14px;
   line-height: 1.8;
 }
 
 .confirm-text .highlight {
-  color: #ff6b6b;
+  color: var(--danger);
   font-weight: 600;
 }
 
-/* ---------- Element Plus 暗色适配 ---------- */
+/* ---------- Element Plus 浅色适配 ---------- */
 :deep(.el-dialog) {
-  background: linear-gradient(180deg, #12223a 0%, #0d1d33 100%);
-  border: 1px solid rgba(26, 50, 72, 0.6);
+  background: var(--bg-white);
+  border: 1px solid var(--border);
   border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow);
 }
 
 :deep(.el-dialog__header) {
-  border-bottom: 1px solid rgba(26, 50, 72, 0.5);
+  border-bottom: 1px solid var(--border);
   margin-right: 0;
   padding: 16px 20px;
-  background: rgba(26, 115, 232, 0.06);
+  background: var(--bg-soft);
 }
 
 :deep(.el-dialog__title) {
-  color: #eaf2fb;
+  color: var(--text-strong);
   font-size: 15px;
   font-weight: 600;
 }
 
 :deep(.el-dialog__body) {
   padding: 20px;
-  color: #b8c6d6;
+  color: var(--text-main);
 }
 
 :deep(.el-dialog__footer) {
-  border-top: 1px solid rgba(26, 50, 72, 0.5);
+  border-top: 1px solid var(--border);
   padding: 12px 20px;
 }
 
 :deep(.el-form-item__label) {
-  color: #8ba2bd;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
 :deep(.el-input__wrapper),
 :deep(.el-input-number) {
-  background: rgba(5, 13, 24, 0.7);
-  border-color: rgba(26, 50, 72, 0.4);
+  background: var(--bg-soft);
+  border-color: var(--border);
   box-shadow: none;
   border-radius: 8px;
 }
 
 :deep(.el-input__wrapper:hover),
 :deep(.el-input-number:hover) {
-  border-color: rgba(26, 115, 232, 0.35);
+  border-color: var(--border-strong);
 }
 
 :deep(.el-input__wrapper.is-focus) {
-  border-color: #3b8dff;
-  box-shadow: 0 0 0 1px rgba(26, 115, 232, 0.25);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary) inset, 0 0 0 3px rgba(176, 123, 62, 0.12);
 }
 
 :deep(.el-input__inner) {
-  color: #c8d6e6;
+  color: var(--text-main);
 }
 
 :deep(.el-select__wrapper) {
-  background: rgba(5, 13, 24, 0.7);
-  box-shadow: 0 0 0 1px rgba(26, 50, 72, 0.45) inset;
+  background: var(--bg-soft);
+  box-shadow: 0 0 0 1px var(--border) inset;
   border-radius: 8px;
 }
 
 :deep(.el-select__placeholder),
 :deep(.el-select__selected-item) {
-  color: #b8c6d6;
+  color: var(--text-main);
 }
 
 :deep(.el-button--primary) {
-  --el-button-bg-color: #1a73e8;
-  --el-button-border-color: #1a73e8;
+  --el-button-bg-color: var(--el-color-primary);
+  --el-button-border-color: var(--el-color-primary);
 }
 
 :deep(.el-button--primary:hover) {
-  --el-button-bg-color: #1557b0;
-  --el-button-border-color: #1557b0;
+  --el-button-bg-color: var(--el-color-primary-dark-2);
+  --el-button-border-color: var(--el-color-primary-dark-2);
 }
 
 :deep(.el-button--danger) {
-  --el-button-bg-color: #e54545;
-  --el-button-border-color: #e54545;
+  --el-button-bg-color: var(--danger);
+  --el-button-border-color: var(--danger);
 }
 
 :deep(.el-button--danger:hover) {
-  --el-button-bg-color: #c93030;
-  --el-button-border-color: #c93030;
+  --el-button-bg-color: #a84444;
+  --el-button-border-color: #a84444;
 }
 
 :deep(.el-button) {
-  --el-button-bg-color: rgba(10, 22, 37, 0.8);
-  --el-button-border-color: rgba(26, 50, 72, 0.4);
-  --el-button-text-color: #8ba2bd;
+  --el-button-bg-color: var(--bg-white);
+  --el-button-border-color: var(--border-strong);
+  --el-button-text-color: var(--text-secondary);
   border-radius: 8px;
 }
 
 :deep(.el-button:hover) {
-  --el-button-border-color: rgba(26, 115, 232, 0.4);
-  --el-button-text-color: #b8c6d6;
+  --el-button-border-color: var(--primary);
+  --el-button-text-color: var(--primary);
 }
 
 /* 下拉选项弹层（teleport 到 body，需全局样式） */
 :global(.el-select-dropdown) {
-  background: #0d1d33;
-  border: 1px solid rgba(26, 50, 72, 0.6);
+  background: var(--bg-white);
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
 :global(.el-select-dropdown__item) {
-  color: #b8c6d6;
+  color: var(--text-main);
 }
 
 :global(.el-select-dropdown__item.is-hovering) {
-  background: rgba(26, 115, 232, 0.12);
+  background: var(--bg-hover);
 }
 
 :global(.el-select-dropdown__item.is-selected) {
-  color: #7ab4ff;
+  color: var(--primary);
 }
 
 /* ---------- 响应式 ---------- */
@@ -1508,7 +1619,7 @@ onUnmounted(() => {
   .modal-sidebar {
     width: 100%;
     border-left: none;
-    border-top: 1px solid rgba(26, 50, 72, 0.5);
+    border-top: 1px solid var(--border);
     padding-left: 0;
     padding-top: 16px;
   }
