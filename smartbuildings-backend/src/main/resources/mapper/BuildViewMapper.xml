@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qst.smartbuildings.mapper.BuildViewMapper">
+
+    <!-- 统计指定设备类型、指定报警分类、指定时间范围内的报警/预警数量 -->
+    <select id="selectAlertCountByTypeAndRange" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM monitor_point_alert mpa
+        INNER JOIN equipment_assets ea ON mpa.equipment_id = ea.asset_id
+        WHERE ea.type_id = #{typeId}
+          AND mpa.alert_type = #{alertType}
+          AND mpa.create_time &gt;= #{startTime}
+          AND mpa.create_time &lt; #{endTime}
+    </select>
+
+</mapper>

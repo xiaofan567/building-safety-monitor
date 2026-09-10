@@ -2,97 +2,289 @@
   "towerCraneWork": {
     "code": "TowerCrane",
     "id": "TC1001",
-    "liftingPointHeight": { "min": 8, "max": 12 },
-    "liftingPointHeightUnload": { "min": 20, "max": 30 },
-    "liftingPointRadius": { "min": 15, "max": 20 },
-    "liftingPointRadiusUnload": { "min": 20, "max": 25 },
-    "startAngle": { "min": 300, "max": 360 },
-    "endAngle": { "min": 0, "max": 50 },
-    "maxPercent": { "min": 30, "max": 50 },
-    "maxWindSpeed": { "min": 2, "max": 5 },
-    "weight": { "min": 10, "max": 20 },
-    "minRadius": { "min": 15, "max": 20 },
-    "maxRadius": { "min": 20, "max": 25 },
-    "minHeight": { "min": 8, "max": 12 },
-    "maxHeight": { "min": 20, "max": 30 }
+    "liftingPointHeight": {
+      "min": 8,
+      "max": 12
+    },
+    "liftingPointHeightUnload": {
+      "min": 20,
+      "max": 30
+    },
+    "liftingPointRadius": {
+      "min": 15,
+      "max": 20
+    },
+    "liftingPointRadiusUnload": {
+      "min": 20,
+      "max": 25
+    },
+    "startAngle": {
+      "min": 300,
+      "max": 360
+    },
+    "endAngle": {
+      "min": 0,
+      "max": 50
+    },
+    "maxPercent": {
+      "min": 30,
+      "max": 50
+    },
+    "maxWindSpeed": {
+      "min": 2,
+      "max": 5
+    },
+    "weight": {
+      "min": 10,
+      "max": 20
+    },
+    "minRadius": {
+      "min": 15,
+      "max": 20
+    },
+    "maxRadius": {
+      "min": 20,
+      "max": 25
+    },
+    "minHeight": {
+      "min": 8,
+      "max": 12
+    },
+    "maxHeight": {
+      "min": 20,
+      "max": 30
+    }
   },
   "towerCraneRealTime": {
     "code": "TowerCrane",
     "id": "TC1001",
-    "rotation": { "min": 0, "max": 360 },
-    "height": { "min": 70, "max": 80 },
-    "amplitude": { "min": 20, "max": 25 },
-    "weight": { "min": 10, "max": 20 },
-    "moment": { "min": 5.5, "max": 9.0 },
-    "windSpeed": { "min": 8, "max": 20 },
-    "obliquity": { "min": 0, "max": 1 }
+    "rotation": {
+      "min": 0,
+      "max": 360
+    },
+    "height": {
+      "min": 70,
+      "max": 80
+    },
+    "amplitude": {
+      "min": 50,
+      "max": 50
+    },
+    "weight": {
+      "min": 10,
+      "max": 20
+    },
+    "moment": {
+      "min": 5.5,
+      "max": 9
+    },
+    "windSpeed": {
+      "min": 8,
+      "max": 20
+    },
+    "obliquity": {
+      "min": 50,
+      "max": 1
+    }
   },
   "elevatorWork": {
     "code": "ee1",
     "id": 2001,
-    "angleY": { "min": -1, "max": 1 },
-    "endFloor": { "min": 20, "max": 30 },
-    "weight": { "min": 80, "max": 100 },
-    "speed": { "min": 1, "max": 3 },
-    "startHeight": { "min": 25, "max": 35 },
-    "endHeight": { "min": 70, "max": 80 },
-    "angle": { "min": -1, "max": 1 },
-    "startFloor": { "min": 15, "max": 25 },
-    "numberOfPeople": { "min": 5, "max": 15 },
-    "wind": { "min": 2, "max": 5 },
-    "height": { "min": 40, "max": 50 }
+    "angleY": {
+      "min": -1,
+      "max": 1
+    },
+    "endFloor": {
+      "min": 20,
+      "max": 30
+    },
+    "weight": {
+      "min": 80,
+      "max": 100
+    },
+    "speed": {
+      "min": 1,
+      "max": 3
+    },
+    "startHeight": {
+      "min": 25,
+      "max": 35
+    },
+    "endHeight": {
+      "min": 70,
+      "max": 80
+    },
+    "angle": {
+      "min": -1,
+      "max": 1
+    },
+    "startFloor": {
+      "min": 15,
+      "max": 25
+    },
+    "numberOfPeople": {
+      "min": 5,
+      "max": 15
+    },
+    "wind": {
+      "min": 2,
+      "max": 5
+    },
+    "height": {
+      "min": 40,
+      "max": 50
+    }
   },
   "elevatorRealTime": {
     "code": "ee1",
     "id": 2001,
-    "weightPercent": { "min": 20, "max": 40 },
-    "weight": { "min": 1, "max": 2 },
-    "speed": { "min": 1, "max": 2 },
-    "startHeight": { "min": 5, "max": 15 },
-    "endHeight": { "min": 20, "max": 30 },
-    "avgSpeed": { "min": 1.5, "max": 2.5 },
-    "xAngle": { "min": -0.5, "max": 0.5 },
-    "yAngle": { "min": -0.2, "max": 0.2 },
-    "numberOfPeople": { "min": 5, "max": 12 },
-    "height": { "min": 50, "max": 65 },
-    "wind": { "min": 3, "max": 6 }
+    "weightPercent": {
+      "min": 20,
+      "max": 40
+    },
+    "weight": {
+      "min": 1,
+      "max": 2
+    },
+    "speed": {
+      "min": 1,
+      "max": 2
+    },
+    "startHeight": {
+      "min": 5,
+      "max": 15
+    },
+    "endHeight": {
+      "min": 20,
+      "max": 30
+    },
+    "avgSpeed": {
+      "min": 1.5,
+      "max": 2.5
+    },
+    "xAngle": {
+      "min": -0.5,
+      "max": 0.5
+    },
+    "yAngle": {
+      "min": -0.2,
+      "max": 0.2
+    },
+    "numberOfPeople": {
+      "min": 5,
+      "max": 12
+    },
+    "height": {
+      "min": 50,
+      "max": 65
+    },
+    "wind": {
+      "min": 3,
+      "max": 6
+    }
   },
   "highFormwork": {
     "code": "hfm1",
     "id": 3001,
-    "xAngle": { "min": -0.1, "max": 0.1 },
-    "pressure": { "min": 4, "max": 7 },
-    "yAngle": { "min": -0.05, "max": 0.05 },
-    "batteryLevel": { "min": 70, "max": 90 },
-    "settlement": { "min": 0.5, "max": 1 }
+    "xAngle": {
+      "min": -0.1,
+      "max": 0.1
+    },
+    "pressure": {
+      "min": 4,
+      "max": 7
+    },
+    "yAngle": {
+      "min": -0.05,
+      "max": 0.05
+    },
+    "batteryLevel": {
+      "min": 70,
+      "max": 90
+    },
+    "settlement": {
+      "min": 0.5,
+      "max": 1
+    }
   },
   "deepFoundation": {
     "code": "dfp1",
     "id": 4001,
-    "strain": { "min": 150, "max": 200 },
-    "settlementRate": { "min": 1, "max": 3 },
-    "settlement": { "min": 8, "max": 12 },
-    "horizontalDisplacement": { "min": 20, "max": 25 },
-    "xAngle": { "min": 0.1, "max": 0.2 },
-    "earthPressure": { "min": 45, "max": 55 },
-    "yAngle": { "min": 0.05, "max": 0.15 },
-    "waterLevel": { "min": -3, "max": 0 }
+    "strain": {
+      "min": 150,
+      "max": 200
+    },
+    "settlementRate": {
+      "min": 1,
+      "max": 3
+    },
+    "settlement": {
+      "min": 8,
+      "max": 12
+    },
+    "horizontalDisplacement": {
+      "min": 20,
+      "max": 25
+    },
+    "xAngle": {
+      "min": 0.1,
+      "max": 0.2
+    },
+    "earthPressure": {
+      "min": 45,
+      "max": 55
+    },
+    "yAngle": {
+      "min": 0.05,
+      "max": 0.15
+    },
+    "waterLevel": {
+      "min": -3,
+      "max": 0
+    }
   },
   "environment": {
     "code": "env1",
     "id": 10,
-    "temp": { "min": 5, "max": 15 },
-    "pm10": { "min": 3, "max": 8 },
-    "pm25": { "min": 10, "max": 25 },
-    "airPres": { "min": 990, "max": 1010 },
-    "tsp": { "min": 300, "max": 400 },
-    "noise": { "min": 60, "max": 75 },
-    "humi": { "min": 20, "max": 35 },
-    "windSpeed": { "min": 0.2, "max": 0.8 }
+    "temp": {
+      "min": 5,
+      "max": 15
+    },
+    "pm10": {
+      "min": 3,
+      "max": 8
+    },
+    "pm25": {
+      "min": 10,
+      "max": 25
+    },
+    "airPres": {
+      "min": 990,
+      "max": 1010
+    },
+    "tsp": {
+      "min": 300,
+      "max": 400
+    },
+    "noise": {
+      "min": 60,
+      "max": 75
+    },
+    "humi": {
+      "min": 20,
+      "max": 35
+    },
+    "windSpeed": {
+      "min": 0.2,
+      "max": 0.8
+    }
   },
   "sprinkler": {
     "code": "pl1001",
     "id": "pl1001",
-    "status": { "min": 0, "max": 1 }
+    "status": {
+      "min": 0,
+      "max": 1
+    }
   }
 }

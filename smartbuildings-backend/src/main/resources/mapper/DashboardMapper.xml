@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qst.smartbuildings.mapper.DashboardMapper">
+
+    <!-- 统计危大工程各设备类型的设备总数、在线数及报警数 -->
+    <select id="selectBuildAssetCount"
+            resultType="com.qst.smartbuildings.vo.BuildAssetCountVO">
+        SELECT
+            et.type_id AS type_id,
+            et.type_name AS type_name,
+            (SELECT COUNT(*) FROM equipment_assets ea
+             WHERE ea.type_id = et.type_id) AS total_equipment,
+            (SELECT COUNT(*) FROM equipment_assets ea
+             WHERE ea.type_id = et.type_id AND ea.offline_status = '1') AS online_equipment,
+            (SELECT COUNT(*) FROM monitor_point_alert mpa
+             INNER JOIN equipment_assets a2 ON mpa.equipment_id = a2.asset_id
+             WHERE a2.type_id = et.type_id) AS alert_count
+        FROM equipment_type et
+        WHERE et.type_id IN (145, 115, 147, 148)
+        ORDER BY et.sort ASC
+    </select>
+
+    <!-- 按报警内容分组统计报警数量（降序） -->
+    <select id="selectAlertTypeCount" resultType="AlertTypeCountItem">
+        SELECT content, COUNT(*) AS numb
+        FROM monitor_point_alert
+        GROUP BY content
+        ORDER BY numb DESC
+    </select>
+
+    <!-- 查询最近喷淋记录（联表补充监测点、设备、位置信息） -->
+    <select id="selectSprayList" resultType="SpraySystem">
+        SELECT
+            s.id,
+            s.monitor_point_id,
+            s.location_id,
+            s.equipment_id,
+            s.trigger_type,
+            s.operation_type,
+            s.operation_reason,
+            s.operation_time,
+            emp.point_name,
+            ea.asset_name,
+            loc.location_name AS asset_location
+        FROM spray_system s
+        LEFT JOIN equipment_monitor_point emp ON s.monitor_point_id = emp.id
+        LEFT JOIN equipment_assets ea ON s.equipment_id = ea.asset_id
+        LEFT JOIN equipment_location loc ON s.location_id = loc.location_id
+        ORDER BY s.operation_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询最近报警记录（联表补充设备、监测点、位置信息） -->
+    <select id="selectRecentAlertList" resultType="MonitorPointAlert">
+        SELECT
+            mp_alert.id,
+            mp_alert.monitor_point_id,
+            mp_alert.equipment_id,
+            mp_alert.monitor_data,
+            mp_alert.content,
+            mp_alert.monitor_log,
+            mp_alert.alert_type,
+            mp_alert.monitor_alert_type,
+            mp_alert.handle_time,
+            mp_alert.recovery_data,
+            mp_alert.recovery_time,
+            mp_alert.handle_by,
+            mp_alert.handle_state,
+            mp_alert.handle_measures,
+            mp_alert.handle_conclu,
+            mp_alert.batch_id,
+            mp_alert.create_time,
+            mp_alert.update_time,
+            eq_assets.asset_name,
+            eq_assets.asset_code,
+            loc.location_name,
+            mp_point.point_name,
+            mp_point.monitor_type,
+            mp_point.monitor_son_type,
+            mp_point.alarm_upper,
+            mp_point.alarm_lower,
+            mp_point.warn_upper,
+            mp_point.warn_lower,
+            mp_point.unit
+        FROM monitor_point_alert mp_alert
+        LEFT JOIN equipment_assets eq_assets ON mp_alert.equipment_id = eq_assets.asset_id
+        LEFT JOIN equipment_monitor_point mp_point ON mp_alert.monitor_point_id = mp_point.id
+        LEFT JOIN equipment_location loc ON eq_assets.location_id = loc.location_id
+        WHERE mp_alert.monitor_alert_type != '4'
+        ORDER BY mp_alert.create_time DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>
