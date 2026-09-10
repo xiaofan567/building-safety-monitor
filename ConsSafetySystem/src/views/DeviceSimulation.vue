@@ -2,6 +2,12 @@
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { io } from 'socket.io-client'
+// 引入 three.js 及其插件（均为全局脚本，顺序执行后挂载到 window.THREE）
+import '../js/three.min.js'
+import '../js/OrbitControls.js'
+import '../js/GLTFLoader.js'
+
+const THREE = window.THREE
 
 // 设备通信模拟服务端地址（Express + Socket.IO）
 const SIM_SERVER_URL = import.meta.env.VITE_SIM_SERVER_URL || 'http://localhost:3000'
@@ -148,6 +154,60 @@ const pendingDisconnectGroup = ref(null)
 
 const logContentRef = ref(null)
 
+// ---------------- 3D 状态（塔吊模型） ----------------
+const threeContainer = ref(null)
+const isTower = computed(() => currentEditingDevice.value === 1 || currentEditingDevice.value === 2)
+
+// 角度转弧度
+function degreesToRadians(degrees) {
+  return degrees * (Math.PI / 180)
+}
+
+// 前臂小车映射函数：0~50 米 -> -3400~3400
+function mapTrolleyPosition(value) {
+  const clampedValue = Math.max(0, Math.min(50, value))
+  return (clampedValue - 0) * (3400 - (-3400)) / (50 - 0) + (-3400)
+}
+
+// 吊钩映射函数：0~60 米 -> -4600~1600
+function mapHookHeight(value) {
+  const clampedValue = Math.max(0, Math.min(60, value))
+  return (clampedValue - 0) * (1600 - (-4600)) / (60 - 0) + (-4600)
+}
+
+// 递归查找指定名称的部件
+function findNestedPart(node, targetName, callback) {
+  if (node.name === targetName) {
+    callback(node)
+    return true
+  }
+  for (let child of node.children) {
+    if (findNestedPart(child, targetName, callback)) return true
+  }
+  return false
+}
+
+// three 场景对象
+let scene, camera, renderer, controls
+let plane002 = null // 塔吊主部件（可旋转）
+let trolley = null // 前臂小车
+let hook = null // 吊钩
+let rope = null // 吊线
+let modelLoaded = false
+const rotationCenter = new THREE.Vector3(0, -14, 14)
+
+let showTC = false // 是否播放动画
+let animationFrame = 601 // 当前动画帧（601 表示未播放）
+let animId = null
+
+// 塔吊参数平均值
+let liftingPointHeightAvg = 0
+let liftingPointHeightUnloadAvg = 0
+let liftingPointRadiusAvg = 0
+let liftingPointRadiusUnloadAvg = 0
+let startAngleAvg = 0
+let endAngleAvg = 0
+
 // ---------------- 计算属性 ----------------
 const groupList = computed(() => Object.keys(GROUP_NAMES))
 const deviceIds = computed(() => Object.keys(deviceStatus).map(Number).sort((a, b) => a - b))
@@ -246,6 +306,163 @@ function confirmDisconnect() {
   pendingDisconnectGroup.value = null
 }
 
+// ---------------- 3D 模型初始化与动画 ----------------
+function init3D() {
+  scene = new THREE.Scene()
+  scene.background = new THREE.Color(0xf0f0f0)
+  camera = new THREE.PerspectiveCamera(75, 500 / 480, 0.1, 2000)
+  camera.position.set(50, 30, 50)
+  renderer = new THREE.WebGLRenderer({ antialias: true })
+  renderer.setPixelRatio(window.devicePixelRatio)
+  renderer.setSize(500, 480)
+  // 控制器，启用阻尼效果
+  controls = new THREE.OrbitControls(camera, renderer.domElement)
+  controls.enableDamping = true
+  // 光源，双光源避免暗面
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
+  scene.add(ambientLight)
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9)
+  directionalLight.position.set(20, 30, 25)
+  scene.add(directionalLight)
+  // 加载塔吊 glb 模型
+  const loader = new THREE.GLTFLoader()
+  loader.load(
+    '/tdcfv2.glb',
+    function (gltf) {
+      const model = gltf.scene
+      scene.add(model)
+      console.log('模型加载成功')
+      // 查找主部件
+      findNestedPart(model, 'Plane002', function (part) {
+        plane002 = part
+        console.log('找到 Plane002 主部件')
+        part.traverse(child => {
+          switch (child.name) {
+            case 'Plane002_Material_#44_0001':
+              trolley = child
+              break
+            case 'Plane002_Material_#44_0002':
+              hook = child
+              break
+            case 'Plane002_Material_#44_0003':
+              rope = child
+              break
+          }
+        })
+        if (!trolley) console.warn('未找到小车组件(Plane002_Material_#44_0001)')
+        if (!hook) console.warn('未找到吊钩组件(Plane002_Material_#44_0002)')
+        if (!rope) console.warn('未找到吊线组件(Plane002_Material_#44_0003)')
+        modelLoaded = true
+      })
+    },
+    function (xhr) {
+      console.log((xhr.loaded / xhr.total * 100) + '% 已加载')
+    },
+    function (error) {
+      console.error('加载出错:', error)
+    }
+  )
+}
+
+// 更新塔吊旋转角度
+function updateRotationAngle(targetRadians) {
+  if (!plane002) return
+  const delta = targetRadians - plane002.rotation.y
+  const offset = new THREE.Vector3().subVectors(plane002.position, rotationCenter)
+  offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), delta)
+  plane002.rotation.y = targetRadians
+  plane002.position.copy(rotationCenter).add(offset)
+}
+
+// 更新小车位置和吊钩
+function updateTrolleyPosition(trolleyPosition, hookHeight) {
+  console.log('更新小车位置:', trolleyPosition, hookHeight)
+  if (!trolley) return
+  trolley.position.set(trolleyPosition, 0, 0)
+  updateHookAndRope(hookHeight)
+}
+
+// 更新吊钩和模型自带吊线
+function updateHookAndRope(hookHeight) {
+  if (!hook || !trolley || !rope) return
+  hook.position.x = trolley.position.x
+  hook.position.y = hookHeight + 100 // +100 防止穿模
+  const box = new THREE.Box3().setFromObject(rope)
+  const originalHeight = box.max.y - box.min.y // 初始高度
+  rope.scale.y = 1 - hookHeight / 1600
+  rope.position.y = originalHeight * (1 - rope.scale.y) / 2
+  rope.position.x = trolley.position.x
+}
+
+// 动画循环
+function animate() {
+  // 只有在播放状态才继续调度下一帧
+  if (showTC) {
+    animId = requestAnimationFrame(animate)
+  }
+  // 600 帧为结束帧
+  if (animationFrame <= 600) {
+    const targetAngle = startAngleAvg + animationFrame * ((endAngleAvg - startAngleAvg) / 600)
+    const targetPointRadius = liftingPointRadiusAvg + animationFrame * ((liftingPointRadiusUnloadAvg - liftingPointRadiusAvg) / 600)
+    const targetPointHeight = liftingPointHeightAvg + animationFrame * ((liftingPointHeightUnloadAvg - liftingPointHeightAvg) / 600)
+    updateRotationAngle(degreesToRadians(targetAngle))
+    updateTrolleyPosition(mapTrolleyPosition(targetPointRadius), mapHookHeight(targetPointHeight))
+    animationFrame++
+  }
+  controls.update()
+  renderer.render(scene, camera)
+}
+
+// 从表单参数计算平均值并同步到动画变量
+function syncFromParams() {
+  const mid = (param) => (param && !isNaN(param.min) && !isNaN(param.max)) ? (param.min + param.max) / 2 : null
+  const params = configForm.params
+  if (currentEditingDevice.value === 1) {
+    for (const [key, target] of [
+      ['liftingPointHeight', () => { liftingPointHeightAvg = mid(params.liftingPointHeight) ?? liftingPointHeightAvg }],
+      ['liftingPointHeightUnload', () => { liftingPointHeightUnloadAvg = mid(params.liftingPointHeightUnload) ?? liftingPointHeightUnloadAvg }],
+      ['liftingPointRadius', () => { liftingPointRadiusAvg = mid(params.liftingPointRadius) ?? liftingPointRadiusAvg }],
+      ['liftingPointRadiusUnload', () => { liftingPointRadiusUnloadAvg = mid(params.liftingPointRadiusUnload) ?? liftingPointRadiusUnloadAvg }],
+      ['startAngle', () => { startAngleAvg = mid(params.startAngle) ?? startAngleAvg }],
+      ['endAngle', () => { endAngleAvg = mid(params.endAngle) ?? endAngleAvg }]
+    ]) { if (params[key]) target() }
+  } else if (currentEditingDevice.value === 2) {
+    if (params.rotation) endAngleAvg = mid(params.rotation) ?? endAngleAvg
+    if (params.height) liftingPointHeightUnloadAvg = mid(params.height) ?? liftingPointHeightUnloadAvg
+    if (params.amplitude) liftingPointRadiusUnloadAvg = mid(params.amplitude) ?? liftingPointRadiusUnloadAvg
+  }
+}
+
+// 打开塔吊 3D 展示并启动动画
+function setupTower3D(deviceId) {
+  showTC = true
+  nextTick(() => {
+    const container = threeContainer.value
+    if (container && renderer && renderer.domElement.parentElement !== container) {
+      container.appendChild(renderer.domElement)
+    }
+    if (deviceId === 1) {
+      // 作业动画：从起始参数运动到结束参数
+      animationFrame = 0
+    } else if (deviceId === 2) {
+      // 实时数据：跳转到最后一帧，仅绘制终态
+      animationFrame = 600
+    }
+    syncFromParams()
+    animate()
+  })
+}
+
+// 关闭配置弹窗（停止动画并清理场景）
+function closeConfigModal() {
+  showTC = false
+  cancelAnimationFrame(animId)
+  animationFrame = 601
+  if (renderer && renderer.domElement) renderer.domElement.remove()
+  currentEditingDevice.value = null
+  configModalVisible.value = false
+}
+
 // ---------------- 配置编辑 ----------------
 function showConfigModal(deviceId) {
   const configKey = CONFIG_KEY_MAP[deviceId]
@@ -264,7 +481,27 @@ function showConfigModal(deviceId) {
     }
   })
   configModalVisible.value = true
+  // 塔吊类型时，在弹窗右侧渲染 3D 模型
+  if (deviceId === 1 || deviceId === 2) {
+    setupTower3D(deviceId)
+  }
 }
+
+// 监听配置参数变化，实时驱动 3D 动画（塔吊作业/实时数据）
+watch(
+  () => configForm.params,
+  () => {
+    const id = currentEditingDevice.value
+    if (id !== 1 && id !== 2) return
+    syncFromParams()
+    if (id === 1) {
+      animationFrame = 0 // 从起始帧重新播放
+    } else {
+      animationFrame = 600 // 仅绘制终态
+    }
+  },
+  { deep: true }
+)
 
 function saveDeviceConfig() {
   const deviceId = currentEditingDevice.value
@@ -291,7 +528,7 @@ function saveDeviceConfig() {
   })
 
   if (!hasChanges) {
-    configModalVisible.value = false
+    closeConfigModal()
     return
   }
 
@@ -306,7 +543,7 @@ function saveDeviceConfig() {
     .then(result => {
       if (result.success) {
         addLogEntry('success', `设备 ${deviceId} 配置已保存`)
-        configModalVisible.value = false
+        closeConfigModal()
       } else {
         addLogEntry('error', '保存配置失败')
       }
@@ -372,10 +609,14 @@ async function loadDeviceConfig() {
 onMounted(async () => {
   await loadDeviceConfig()
   setupSocket()
+  init3D()
 })
 
 onUnmounted(() => {
+  showTC = false
+  cancelAnimationFrame(animId)
   socket.value?.disconnect()
+  renderer?.dispose()
 })
 </script>
 
@@ -383,10 +624,13 @@ onUnmounted(() => {
   <div class="simulation-page">
     <!-- 顶部标题 -->
     <div class="page-header">
-      <h2>设备通信模拟控制</h2>
-      <div class="ws-status">
-        <span class="ws-dot" :class="{ connected: socketConnected }"></span>
-        <span>{{ socketConnected ? 'Socket 已连接' : 'Socket 未连接' }}</span>
+      <div class="page-heading">
+        <h2>设备通信模拟控制</h2>
+        <span class="page-subtitle">设备数据模拟 · 塔吊 3D 实时联动</span>
+      </div>
+      <div class="ws-status" :class="{ connected: socketConnected }">
+        <span class="ws-dot"></span>
+        <span class="ws-text">{{ socketConnected ? 'Socket 已连接' : 'Socket 未连接' }}</span>
       </div>
     </div>
 
@@ -475,34 +719,43 @@ onUnmounted(() => {
     <el-dialog
       v-model="configModalVisible"
       :title="configModalTitle"
-      width="720px"
+      width="1160px"
       :close-on-click-modal="false"
     >
-      <el-form label-width="120px">
-        <div class="config-section-title">基本信息</div>
-        <el-form-item label="设备编码 (code)">
-          <el-input v-model="configForm.code" placeholder="设备编码" />
-        </el-form-item>
-        <el-form-item label="设备ID (id)">
-          <el-input v-model="configForm.id" placeholder="设备ID" />
-        </el-form-item>
-        <template v-if="Object.keys(configForm.params).length > 0">
-          <div class="config-section-title">参数范围配置</div>
-          <el-form-item
-            v-for="(param, key) in configForm.params"
-            :key="key"
-            :label="getParameterDisplayName(key)"
-          >
-            <div class="range-inputs">
-              <el-input-number v-model="configForm.params[key].min" :controls="false" size="small" class="range-input" />
-              <span class="range-sep">~</span>
-              <el-input-number v-model="configForm.params[key].max" :controls="false" size="small" class="range-input" />
-            </div>
-          </el-form-item>
-        </template>
-      </el-form>
+      <div class="modal-layout">
+        <div class="modal-main">
+          <el-form label-width="120px">
+            <div class="config-section-title">基本信息</div>
+            <el-form-item label="设备编码 (code)">
+              <el-input v-model="configForm.code" placeholder="设备编码" />
+            </el-form-item>
+            <el-form-item label="设备ID (id)">
+              <el-input v-model="configForm.id" placeholder="设备ID" />
+            </el-form-item>
+            <template v-if="Object.keys(configForm.params).length > 0">
+              <div class="config-section-title">参数范围配置</div>
+              <el-form-item
+                v-for="(param, key) in configForm.params"
+                :key="key"
+                :label="getParameterDisplayName(key)"
+              >
+                <div class="range-inputs">
+                  <el-input-number v-model="configForm.params[key].min" :controls="false" size="small" class="range-input" />
+                  <span class="range-sep">~</span>
+                  <el-input-number v-model="configForm.params[key].max" :controls="false" size="small" class="range-input" />
+                </div>
+              </el-form-item>
+            </template>
+          </el-form>
+        </div>
+        <!-- 塔吊 3D 模型展示区（仅在塔吊设备时显示） -->
+        <div v-if="isTower" class="modal-sidebar">
+          <h3 class="config-section-title center">塔吊3D模型展示</h3>
+          <div ref="threeContainer" class="three-container"></div>
+        </div>
+      </div>
       <template #footer>
-        <el-button @click="configModalVisible = false">取消</el-button>
+        <el-button @click="closeConfigModal">取消</el-button>
         <el-button type="primary" @click="saveDeviceConfig">保存配置</el-button>
       </template>
     </el-dialog>
@@ -524,51 +777,101 @@ onUnmounted(() => {
 
 <style scoped>
 .simulation-page {
+  position: relative;
   padding: 20px;
   height: 100%;
   display: flex;
   flex-direction: column;
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
   overflow: hidden;
+  background:
+    radial-gradient(1200px 600px at 8% -10%, rgba(26, 115, 232, 0.16), transparent 60%),
+    radial-gradient(1000px 520px at 100% 0%, rgba(13, 158, 108, 0.12), transparent 55%),
+    linear-gradient(180deg, #0a1422 0%, #0d1d33 55%, #08111f 100%);
 }
 
+/* ---------- 顶部标题 ---------- */
 .page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   flex-shrink: 0;
 }
 
-.page-header h2 {
+.page-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.page-heading h2 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #e8edf2;
+  font-size: 20px;
+  font-weight: 800;
   letter-spacing: 1px;
+  background: linear-gradient(90deg, #7ab4ff 0%, #cfe4ff 45%, #4ade80 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.page-subtitle {
+  font-size: 12px;
+  color: #5a7ea0;
+  letter-spacing: 0.5px;
 }
 
 .ws-status {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 7px 14px;
+  border: 1px solid rgba(26, 50, 72, 0.6);
+  background: rgba(10, 22, 37, 0.6);
+  border-radius: 30px;
   font-size: 12px;
-  color: #8899aa;
+  color: #7d8fa3;
+  transition: border-color 0.3s, color 0.3s;
+}
+
+.ws-status.connected {
+  border-color: rgba(13, 158, 108, 0.5);
+  color: #4ade80;
+}
+
+.ws-text {
+  font-weight: 500;
 }
 
 .ws-dot {
-  width: 8px;
-  height: 8px;
+  position: relative;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #5a6a7a;
-  transition: all 0.3s;
+  transition: background 0.3s;
 }
 
-.ws-dot.connected {
+.ws-status.connected .ws-dot {
   background: #0d9e6c;
-  box-shadow: 0 0 6px rgba(13, 158, 108, 0.8);
 }
 
+.ws-status.connected .ws-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(13, 158, 108, 0.4);
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* ---------- 面板布局 ---------- */
 .sim-main {
   flex: 1;
   display: flex;
@@ -577,12 +880,15 @@ onUnmounted(() => {
 }
 
 .panel {
-  background: #0f1d2e;
-  border: 1px solid rgba(26, 50, 72, 0.5);
-  border-radius: 10px;
+  position: relative;
+  background: linear-gradient(180deg, rgba(20, 40, 62, 0.55), rgba(10, 22, 37, 0.7));
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(26, 50, 72, 0.55);
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .status-panel {
@@ -606,13 +912,14 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 14px 18px;
   border-bottom: 1px solid rgba(26, 50, 72, 0.5);
+  background: rgba(26, 115, 232, 0.05);
   flex-shrink: 0;
 }
 
 .panel-title {
   font-size: 14px;
   font-weight: 600;
-  color: #e8edf2;
+  color: #e8f1fb;
   position: relative;
   padding-left: 14px;
 }
@@ -625,13 +932,18 @@ onUnmounted(() => {
   transform: translateY(-50%);
   width: 3px;
   height: 16px;
-  background: linear-gradient(180deg, #1a73e8, #0d9e6c);
+  background: linear-gradient(180deg, #3b8dff, #0d9e6c);
   border-radius: 2px;
+  box-shadow: 0 0 8px rgba(26, 115, 232, 0.6);
 }
 
 .panel-count {
   font-size: 11px;
-  color: #5a6a7a;
+  color: #6e88a2;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: rgba(26, 115, 232, 0.1);
+  border: 1px solid rgba(26, 115, 232, 0.2);
 }
 
 .panel-empty {
@@ -654,34 +966,46 @@ onUnmounted(() => {
 .status-list::-webkit-scrollbar,
 .device-grid::-webkit-scrollbar,
 .log-content::-webkit-scrollbar {
-  width: 3px;
+  width: 5px;
 }
 
 .status-list::-webkit-scrollbar-thumb,
 .device-grid::-webkit-scrollbar-thumb,
 .log-content::-webkit-scrollbar-thumb {
-  background: rgba(26, 115, 232, 0.15);
-  border-radius: 2px;
+  background: rgba(26, 115, 232, 0.2);
+  border-radius: 4px;
 }
 
 .status-item {
-  border-radius: 8px;
+  position: relative;
+  border-radius: 10px;
   padding: 12px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   border: 1px solid;
-  transition: all 0.2s;
+  transition: all 0.25s;
+  overflow: hidden;
 }
 
 .status-item.connected {
-  background: rgba(13, 158, 108, 0.08);
-  border-color: rgba(13, 158, 108, 0.45);
+  background: linear-gradient(135deg, rgba(13, 158, 108, 0.14), rgba(13, 158, 108, 0.03));
+  border-color: rgba(13, 158, 108, 0.4);
+}
+
+.status-item.connected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #0d9e6c, #34d399);
 }
 
 .status-item.disconnected {
-  background: #0a1625;
+  background: rgba(10, 22, 37, 0.6);
   border-color: rgba(26, 50, 72, 0.5);
 }
 
@@ -693,25 +1017,42 @@ onUnmounted(() => {
 }
 
 .status-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-size: 13px;
-  color: #bcc8d4;
+  color: #b8c6d6;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .status-item.connected .status-name {
-  color: #e8edf2;
+  color: #e8f1fb;
+}
+
+.status-name::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3a5068;
+}
+
+.status-item.connected .status-name::before {
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.8);
 }
 
 .status-badge {
   align-self: flex-start;
   font-size: 11px;
-  padding: 1px 8px;
+  padding: 2px 9px;
   border-radius: 10px;
+  font-weight: 500;
 }
 
 .status-badge.on {
-  background: rgba(13, 158, 108, 0.15);
+  background: rgba(13, 158, 108, 0.16);
   color: #4ade80;
 }
 
@@ -727,13 +1068,14 @@ onUnmounted(() => {
   border: 1px solid rgba(229, 69, 69, 0.4);
   background: transparent;
   color: #ff6b6b;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .disconnect-btn:hover {
   background: rgba(229, 69, 69, 0.12);
+  box-shadow: 0 0 10px rgba(229, 69, 69, 0.15);
 }
 
 /* ---------- 设备控制 ---------- */
@@ -757,10 +1099,10 @@ onUnmounted(() => {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 13px;
   padding: 14px 16px;
   border: 1px solid;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   text-align: left;
   transition: all 0.25s;
@@ -768,25 +1110,44 @@ onUnmounted(() => {
 }
 
 .device-button.running {
-  background: linear-gradient(135deg, rgba(13, 158, 108, 0.16), rgba(13, 158, 108, 0.05));
-  border-color: rgba(13, 158, 108, 0.45);
+  background: linear-gradient(135deg, rgba(13, 158, 108, 0.2), rgba(13, 158, 108, 0.05));
+  border-color: rgba(13, 158, 108, 0.5);
   color: #4ade80;
+  box-shadow: inset 0 0 20px rgba(13, 158, 108, 0.08), 0 4px 14px rgba(13, 158, 108, 0.12);
 }
 
 .device-button.stopped {
-  background: #0a1625;
+  background: rgba(10, 22, 37, 0.6);
   border-color: rgba(26, 50, 72, 0.5);
-  color: #8899aa;
+  color: #7d8fa3;
+}
+
+.device-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
 }
 
 .device-button.stopped:hover {
-  border-color: rgba(26, 115, 232, 0.35);
-  color: #bcc8d4;
+  border-color: rgba(26, 115, 232, 0.4);
+  color: #b8c6d6;
 }
 
 .device-icon {
   display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: rgba(26, 115, 232, 0.1);
+  border: 1px solid rgba(26, 115, 232, 0.15);
+  transition: all 0.25s;
+}
+
+.device-button.running .device-icon {
+  background: rgba(13, 158, 108, 0.15);
+  border-color: rgba(13, 158, 108, 0.3);
 }
 
 .device-button-inner {
@@ -798,14 +1159,14 @@ onUnmounted(() => {
 .device-name {
   font-size: 13px;
   font-weight: 600;
-  color: #e8edf2;
+  color: #eaf2fb;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .device-button.stopped .device-name {
-  color: #bcc8d4;
+  color: #b8c6d6;
 }
 
 .device-status-text {
@@ -815,19 +1176,20 @@ onUnmounted(() => {
 }
 
 .edit-btn {
-  width: 52px;
+  width: 56px;
   border: 1px solid rgba(26, 115, 232, 0.3);
-  border-radius: 8px;
+  border-radius: 12px;
   background: rgba(26, 115, 232, 0.12);
-  color: #5a8fd4;
+  color: #7aa7e8;
   cursor: pointer;
   font-size: 12px;
   transition: all 0.2s;
 }
 
 .edit-btn:hover {
-  background: rgba(26, 115, 232, 0.22);
-  color: #1a73e8;
+  background: rgba(26, 115, 232, 0.25);
+  color: #8ec2ff;
+  border-color: rgba(26, 115, 232, 0.5);
 }
 
 /* ---------- 通信日志 ---------- */
@@ -844,24 +1206,24 @@ onUnmounted(() => {
 .log-btn {
   padding: 5px 12px;
   font-size: 12px;
-  background: #0a1625;
+  background: rgba(10, 22, 37, 0.7);
   border: 1px solid rgba(26, 50, 72, 0.5);
-  color: #8899aa;
-  border-radius: 5px;
+  color: #7d8fa3;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .log-btn:hover {
-  color: #bcc8d4;
-  border-color: rgba(26, 115, 232, 0.3);
+  color: #b8c6d6;
+  border-color: rgba(26, 115, 232, 0.35);
 }
 
 .log-content {
   flex: 1;
   overflow-y: auto;
   padding: 12px 16px;
-  background: #0a1625;
+  background: rgba(5, 13, 24, 0.6);
   font-family: 'Consolas', 'Courier New', monospace;
   font-size: 12px;
   line-height: 1.8;
@@ -871,7 +1233,13 @@ onUnmounted(() => {
   display: flex;
   gap: 10px;
   word-break: break-all;
-  padding: 2px 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.log-entry:hover {
+  background: rgba(26, 115, 232, 0.06);
 }
 
 .log-time {
@@ -880,7 +1248,7 @@ onUnmounted(() => {
 }
 
 .log-message {
-  color: #bcc8d4;
+  color: #b8c6d6;
 }
 
 .log-entry.sent .log-message {
@@ -910,13 +1278,53 @@ onUnmounted(() => {
 }
 
 /* ---------- 弹窗内部 ---------- */
+.modal-layout {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.modal-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-sidebar {
+  width: 520px;
+  flex-shrink: 0;
+  border-left: 1px solid rgba(26, 50, 72, 0.5);
+  padding-left: 20px;
+}
+
+.three-container {
+  width: 500px;
+  height: 480px;
+  background:
+    radial-gradient(400px 300px at 50% 0%, rgba(26, 115, 232, 0.1), transparent 70%),
+    rgba(5, 13, 24, 0.8);
+  border: 1px solid rgba(26, 115, 232, 0.25);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 0 40px rgba(26, 115, 232, 0.1), 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.three-container canvas {
+  display: block;
+}
+
+.config-section-title.center {
+  text-align: center;
+  border-left: none;
+  padding-left: 0;
+}
+
 .config-section-title {
   font-size: 13px;
   font-weight: 600;
-  color: #1a73e8;
+  color: #7ab4ff;
   margin: 6px 0 14px;
   padding-left: 10px;
-  border-left: 3px solid #1a73e8;
+  border-left: 3px solid #3b8dff;
 }
 
 .range-inputs {
@@ -926,7 +1334,7 @@ onUnmounted(() => {
 }
 
 .range-input {
-  width: 200px;
+  width: 165px;
 }
 
 .range-sep {
@@ -934,7 +1342,7 @@ onUnmounted(() => {
 }
 
 .confirm-text {
-  color: #bcc8d4;
+  color: #b8c6d6;
   font-size: 14px;
   line-height: 1.8;
 }
@@ -946,26 +1354,28 @@ onUnmounted(() => {
 
 /* ---------- Element Plus 暗色适配 ---------- */
 :deep(.el-dialog) {
-  background: #0f1d2e;
+  background: linear-gradient(180deg, #12223a 0%, #0d1d33 100%);
   border: 1px solid rgba(26, 50, 72, 0.6);
-  border-radius: 10px;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 :deep(.el-dialog__header) {
   border-bottom: 1px solid rgba(26, 50, 72, 0.5);
   margin-right: 0;
   padding: 16px 20px;
+  background: rgba(26, 115, 232, 0.06);
 }
 
 :deep(.el-dialog__title) {
-  color: #e8edf2;
+  color: #eaf2fb;
   font-size: 15px;
   font-weight: 600;
 }
 
 :deep(.el-dialog__body) {
   padding: 20px;
-  color: #bcc8d4;
+  color: #b8c6d6;
 }
 
 :deep(.el-dialog__footer) {
@@ -974,39 +1384,41 @@ onUnmounted(() => {
 }
 
 :deep(.el-form-item__label) {
-  color: #8899aa;
+  color: #8ba2bd;
   font-size: 13px;
 }
 
 :deep(.el-input__wrapper),
 :deep(.el-input-number) {
-  background: #0a1625;
+  background: rgba(5, 13, 24, 0.7);
   border-color: rgba(26, 50, 72, 0.4);
   box-shadow: none;
+  border-radius: 8px;
 }
 
 :deep(.el-input__wrapper:hover),
 :deep(.el-input-number:hover) {
-  border-color: rgba(26, 115, 232, 0.3);
+  border-color: rgba(26, 115, 232, 0.35);
 }
 
 :deep(.el-input__wrapper.is-focus) {
-  border-color: #1a73e8;
-  box-shadow: 0 0 0 1px rgba(26, 115, 232, 0.2);
+  border-color: #3b8dff;
+  box-shadow: 0 0 0 1px rgba(26, 115, 232, 0.25);
 }
 
 :deep(.el-input__inner) {
-  color: #bcc8d4;
+  color: #c8d6e6;
 }
 
 :deep(.el-select__wrapper) {
-  background: #0a1625;
-  box-shadow: 0 0 0 1px rgba(26, 50, 72, 0.4) inset;
+  background: rgba(5, 13, 24, 0.7);
+  box-shadow: 0 0 0 1px rgba(26, 50, 72, 0.45) inset;
+  border-radius: 8px;
 }
 
 :deep(.el-select__placeholder),
 :deep(.el-select__selected-item) {
-  color: #bcc8d4;
+  color: #b8c6d6;
 }
 
 :deep(.el-button--primary) {
@@ -1030,38 +1442,48 @@ onUnmounted(() => {
 }
 
 :deep(.el-button) {
-  --el-button-bg-color: #0a1625;
+  --el-button-bg-color: rgba(10, 22, 37, 0.8);
   --el-button-border-color: rgba(26, 50, 72, 0.4);
-  --el-button-text-color: #8899aa;
+  --el-button-text-color: #8ba2bd;
+  border-radius: 8px;
 }
 
 :deep(.el-button:hover) {
-  --el-button-border-color: rgba(26, 115, 232, 0.3);
-  --el-button-text-color: #bcc8d4;
+  --el-button-border-color: rgba(26, 115, 232, 0.4);
+  --el-button-text-color: #b8c6d6;
 }
 
 /* 下拉选项弹层（teleport 到 body，需全局样式） */
 :global(.el-select-dropdown) {
-  background: #0f1d2e;
+  background: #0d1d33;
   border: 1px solid rgba(26, 50, 72, 0.6);
+  border-radius: 8px;
 }
 
 :global(.el-select-dropdown__item) {
-  color: #bcc8d4;
+  color: #b8c6d6;
 }
 
 :global(.el-select-dropdown__item.is-hovering) {
-  background: rgba(26, 115, 232, 0.1);
+  background: rgba(26, 115, 232, 0.12);
 }
 
 :global(.el-select-dropdown__item.is-selected) {
-  color: #1a73e8;
+  color: #7ab4ff;
 }
 
 /* ---------- 响应式 ---------- */
 @media (max-width: 1200px) {
   .status-panel {
     width: 280px;
+  }
+
+  .modal-sidebar {
+    width: 480px;
+  }
+
+  .three-container {
+    width: 460px;
   }
 }
 
@@ -1077,6 +1499,22 @@ onUnmounted(() => {
 
   .device-grid {
     grid-template-columns: 1fr;
+  }
+
+  .modal-layout {
+    flex-direction: column;
+  }
+
+  .modal-sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid rgba(26, 50, 72, 0.5);
+    padding-left: 0;
+    padding-top: 16px;
+  }
+
+  .three-container {
+    width: 100%;
   }
 }
 </style>
