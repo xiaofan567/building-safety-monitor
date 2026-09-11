@@ -110,6 +110,8 @@ const props = defineProps({
   editable: { type: Boolean, default: false }
 })
 
+const emit = defineEmits(['deviceClick'])
+
 const elevators = ref([])
 
 // 设备总览数据
@@ -143,6 +145,11 @@ const init = async () => {
 
 // 设备跳转逻辑（点击图标/列表跳转到对应监控详情）
 const goStateList = (assetId, monitorType, assetName) => {
+  // 塔吊点击：上抛给父页面打开塔机监测分析
+  if (monitorType === 2) {
+    emit('deviceClick', { assetId, monitorType, assetName })
+    return
+  }
   let targetPath = ''
   let queryParams = { assetId }
   switch (monitorType) {

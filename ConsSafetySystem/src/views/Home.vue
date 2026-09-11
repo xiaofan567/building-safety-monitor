@@ -10,12 +10,14 @@ import DeviceSimulation from '@/views/DeviceSimulation.vue'
 import EquipmentLocation from '@/views/EquipmentLocation.vue'
 import EquipmentAssets from '@/views/EquipmentAssets.vue'
 import EquipmentOverview from '@/views/EquipmentOverview.vue'
+import TowerMonitoring from '@/views/TowerMonitoring.vue'
 
 const router = useRouter()
 const store = useStore()
-const currentComponent = ref('MainPage')
+const currentComponent = ref('TowerMonitoring')
 const activeMenu = ref('dashboard')
 const overviewType = ref(5)
+const towerAssetId = ref(null)
 
 const constructionMenuVisible = ref(false)
 const equipmentMenuVisible = ref(false)
@@ -31,9 +33,9 @@ const siteOptions = [
 const equipmentOptions = [
   { label: '机械设备总览', value: 5 },
   { label: '塔吊', value: 1 },
-  { label: '升降机', value: 2 },
-  { label: '深基坑', value: 3 },
-  { label: '高支模', value: 4 }
+  { label: '升降机', value: 2, disabled: true },
+  { label: '深基坑', value: 3, disabled: true },
+  { label: '高支模', value: 4, disabled: true }
 ]
 
 const menuItems = [
@@ -46,14 +48,23 @@ const menuItems = [
 ]
 
 const getCurrentComponent = computed(() => {
-  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets, 'EquipmentOverview': EquipmentOverview }
+  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets, 'EquipmentOverview': EquipmentOverview, 'TowerMonitoring': TowerMonitoring }
   return map[currentComponent.value] || MainPage
 })
 
 // 设备总览组件需要把顶部下拉选中的类型作为初始类型传入
-const overviewProps = computed(() =>
-  currentComponent.value === 'EquipmentOverview' ? { initialType: overviewType.value } : {}
-)
+const overviewProps = computed(() => {
+  if (currentComponent.value === 'EquipmentOverview') return { initialType: overviewType.value }
+  if (currentComponent.value === 'TowerMonitoring') return { initialAssetId: towerAssetId.value }
+  return {}
+})
+
+// 从总览点击塔吊图标进入塔机监测分析
+function openTowerMonitor(payload) {
+  towerAssetId.value = payload ? Number(payload.assetId) : null
+  activeMenu.value = 'equipment'
+  currentComponent.value = 'TowerMonitoring'
+}
 
 function handleMenuClick(key) {
   activeMenu.value = key
@@ -124,12 +135,19 @@ function selectEquipmentAssets() {
   currentComponent.value = 'EquipmentAssets'
 }
 
-// 施工设备下拉 - 选择设备总览类型
+// 施工设备下拉 - 选择设备查看入口
 function selectOverview(type) {
   equipmentMenuVisible.value = false
   activeMenu.value = 'equipment'
-  overviewType.value = type
-  currentComponent.value = 'EquipmentOverview'
+  if (type === 5) {
+    // 机械设备总览：保持总览页不变
+    overviewType.value = 5
+    currentComponent.value = 'EquipmentOverview'
+  } else if (type === 1) {
+    // 塔吊：进入塔机监测分析页（任务6-2）
+    towerAssetId.value = null
+    currentComponent.value = 'TowerMonitoring'
+  }
 }
 
 function handleClickOutside(event) {
@@ -234,8 +252,9 @@ onUnmounted(() => {
           </button>
           <transition name="dropdown-fade">
             <div class="dropdown-menu" v-show="equipmentMenuVisible">
-              <div class="dropdown-item" v-for="opt in equipmentOptions" :key="opt.value" @click.stop="selectOverview(opt.value)">
+              <div class="dropdown-item" :class="{ 'dropdown-item-disabled': opt.disabled }" v-for="opt in equipmentOptions" :key="opt.value" @click.stop="!opt.disabled && selectOverview(opt.value)">
                 {{ opt.label }}
+                <span v-if="opt.disabled" class="dropdown-tag">待开发</span>
               </div>
             </div>
           </transition>
@@ -262,7 +281,7 @@ onUnmounted(() => {
     </header>
 
     <main class="main-content">
-      <component :is="getCurrentComponent" v-bind="overviewProps" />
+      <component :is="getCurrentComponent" v-bind="overviewProps" @open-tower="openTowerMonitor" />
     </main>
   </div>
 </template>
@@ -357,6 +376,16 @@ onUnmounted(() => {
   cursor: not-allowed;
   color: var(--text-faint);
   background: transparent;
+}
+
+.dropdown-tag {
+  margin-left: 8px;
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  background: var(--bg-muted);
 }
 
 .navbar-right {

@@ -46,6 +46,7 @@
           : type === 4 ? HighFormworkSupportOverview
           : allOverview"
         :editable="editable"
+        @device-click="onDeviceClick"
       ></component>
     </div>
   </div>
@@ -91,6 +92,14 @@ watch(
 
 const equipmentSwitch = (val) => {
   type.value = val
+}
+
+// 接到子组件设备点击：塔吊（monitorType=2）时上抛给 Home 打开塔机监测分析
+const emit = defineEmits(['openTower'])
+const onDeviceClick = (payload) => {
+  if (payload && payload.monitorType === 2) {
+    emit('openTower', { assetId: payload.assetId, assetName: payload.assetName })
+  }
 }
 
 defineExpose({ type, equipmentSwitch })
