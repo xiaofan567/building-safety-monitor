@@ -2,28 +2,17 @@ import request from '@/utils/request'
 
 /**
  * 获取设备类型树形结构
- * GET /equipmentType/tree
+ * 后端 `POST /equipmentType/queryTreeList` 直接返回嵌套好的树（含 children）
  */
 export function getEquipmentTypeTree() {
   return request({
-    url: '/equipmentType/tree',
-    method: 'get'
+    url: '/equipmentType/queryTreeList',
+    method: 'post'
   })
 }
 
 /**
- * 获取设备类型列表
- * GET /equipmentType/list
- */
-export function getEquipmentTypeList() {
-  return request({
-    url: '/equipmentType/list',
-    method: 'get'
-  })
-}
-
-/**
- * 新增设备类型
+ * 新增或编辑设备类型（后端同一接口，按 typeId 是否存在区分）
  * POST /equipmentType/save
  */
 export function saveEquipmentType(data) {
@@ -36,21 +25,9 @@ export function saveEquipmentType(data) {
 }
 
 /**
- * 编辑设备类型
- * POST /equipmentType/update
- */
-export function updateEquipmentType(data) {
-  return request({
-    url: '/equipmentType/update',
-    method: 'post',
-    data,
-    headers: { 'Content-Type': 'application/json' }
-  })
-}
-
-/**
  * 删除设备类型
  * POST /equipmentType/delete
+ * @param {number} typeId 类型ID
  */
 export function deleteEquipmentType(typeId) {
   return request({

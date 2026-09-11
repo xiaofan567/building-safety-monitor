@@ -1,78 +1,17 @@
 import request from '@/utils/request'
 
 /**
- * 获取统计数据卡片
- * GET /dashboard/stats
+ * 获取首页看板聚合数据
+ * 后端 `POST /dashboard/getDashboardData` 一次接口返回首页各模块数据：
+ *   - buildAssetCount：危大工程设备统计（type_name/total_equipment/online_equipment/alert_count）
+ *   - alertList / alertListPage：最近报警记录
+ *   - alertTypeAndCount：报警类型聚合统计（content/numb）
+ *   - spraySystemList：最近喷淋记录
+ *   - realTimeList：环境实时数据（各监测点最新一条）
  */
-export function getDashboardStats() {
+export function getDashboardData() {
   return request({
-    url: '/dashboard/stats',
-    method: 'get'
-  })
-}
-
-/**
- * 获取环境实时数据
- * GET /dashboard/environment/realtime
- */
-export function getEnvironmentRealtime() {
-  return request({
-    url: '/dashboard/environment/realtime',
-    method: 'get'
-  })
-}
-
-/**
- * 获取安全隐患数据（用于图表）
- * GET /dashboard/safety/hazards
- */
-export function getSafetyHazards() {
-  return request({
-    url: '/dashboard/safety/hazards',
-    method: 'get'
-  })
-}
-
-/**
- * 获取喷淋记录
- * GET /dashboard/spray/records
- */
-export function getSprayRecords() {
-  return request({
-    url: '/dashboard/spray/records',
-    method: 'get'
-  })
-}
-
-/**
- * 获取报警列表
- * GET /dashboard/alarms
- */
-export function getAlarmList() {
-  return request({
-    url: '/dashboard/alarms',
-    method: 'get'
-  })
-}
-
-/**
- * 获取设备状态总览
- * GET /dashboard/device/overview
- */
-export function getDeviceOverview() {
-  return request({
-    url: '/dashboard/device/overview',
-    method: 'get'
-  })
-}
-
-/**
- * 获取设备运行统计
- * GET /dashboard/device/statistics
- */
-export function getDeviceStatistics() {
-  return request({
-    url: '/dashboard/device/statistics',
-    method: 'get'
+    url: '/dashboard/getDashboardData',
+    method: 'post'
   })
 }

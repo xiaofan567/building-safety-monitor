@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
-import { getDashboardStats, getEnvironmentRealtime, getSafetyHazards, getSprayRecords, getAlarmList, getDeviceOverview, getDeviceStatistics } from '@/api/dashboard'
+import { getDashboardData } from '@/api/dashboard'
 
 const stats = ref({})
 const envData = ref([])
@@ -116,8 +116,14 @@ function initHazardChart() {
   if (hazardChartInstance) hazardChartInstance.dispose()
   hazardChartInstance = echarts.init(hazardChartRef.value)
 
-  const categories = ['高处坠落','物体打击','机械伤害','坍塌','触电','火灾']
-  const values = [23, 18, 15, 10, 8, 6]
+  // 安全隐患分布数据源：后端报警类型聚合（content -> 数量）
+  const hazardList = Array.isArray(hazardChartData.value) ? hazardChartData.value : []
+  let categories = hazardList.map(i => i.content)
+  let values = hazardList.map(i => Number(i.numb) || 0)
+  if (!categories.length) {
+    categories = ['高处坠落','物体打击','机械伤害','坍塌','触电','火灾']
+    values = [23, 18, 15, 10, 8, 6]
+  }
 
   hazardChartInstance.setOption({
     tooltip: {
@@ -222,13 +228,23 @@ function initDeviceOverviewChart() {
   if (deviceOverviewChartInstance) deviceOverviewChartInstance.dispose()
   deviceOverviewChartInstance = echarts.init(deviceOverviewChartRef.value)
 
-  const data = [
-    { value: 20, name: '塔吊', itemStyle: { color: '#1a73e8' } },
-    { value: 12, name: '升降机', itemStyle: { color: '#0d9e6c' } },
-    { value: 18, name: '传感器', itemStyle: { color: '#f5a623' } },
-    { value: 8, name: '喷淋设备', itemStyle: { color: '#0ea5e9' } },
-    { value: 6, name: '摄像头', itemStyle: { color: '#8b5cf6' } }
-  ]
+  // 设备状态总览：后端危大工程设备统计（type_name -> 设备总数）
+  const countList = Array.isArray(deviceOverview.value) ? deviceOverview.value : []
+  const piColors = ['#1a73e8', '#0d9e6c', '#f5a623', '#0ea5e9', '#8b5cf6']
+  let data = countList.map((x, idx) => ({
+    name: x.type_name || x.typeName || '未分类',
+    value: Number(x.total_equipment) || 0,
+    itemStyle: { color: piColors[idx % piColors.length] }
+  }))
+  if (!data.length) {
+    data = [
+      { value: 20, name: '塔吊', itemStyle: { color: '#1a73e8' } },
+      { value: 12, name: '升降机', itemStyle: { color: '#0d9e6c' } },
+      { value: 18, name: '传感器', itemStyle: { color: '#f5a623' } },
+      { value: 8, name: '喷淋设备', itemStyle: { color: '#0ea5e9' } },
+      { value: 6, name: '摄像头', itemStyle: { color: '#8b5cf6' } }
+    ]
+  }
 
   deviceOverviewChartInstance.setOption({
     tooltip: {
@@ -277,9 +293,16 @@ function initDeviceStatsChart() {
   if (deviceStatsChartInstance) deviceStatsChartInstance.dispose()
   deviceStatsChartInstance = echarts.init(deviceStatsChartRef.value)
 
-  const types = ['塔吊', '升降机', '传感器', '喷淋', '摄像头']
-  const onlineData = [18, 10, 16, 7, 5]
-  const offlineData = [2, 2, 2, 1, 1]
+  // 设备运行统计：后端危大工程设备统计（在线 / 总-在线）
+  const statsList = Array.isArray(deviceStatistics.value) ? deviceStatistics.value : []
+  let types = statsList.map(x => x.type_name || x.typeName || '未分类')
+  let onlineData = statsList.map(x => Number(x.online_equipment) || 0)
+  let offlineData = statsList.map(x => (Number(x.total_equipment) || 0) - (Number(x.online_equipment) || 0))
+  if (!types.length) {
+    types = ['塔吊', '升降机', '传感器', '喷淋', '摄像头']
+    onlineData = [18, 10, 16, 7, 5]
+    offlineData = [2, 2, 2, 1, 1]
+  }
 
   deviceStatsChartInstance.setOption({
     tooltip: {
@@ -344,24 +367,56 @@ function handleResize() {
   deviceStatsChartInstance?.resize()
 }
 
+function renderCharts() {
+  initEnvChart()
+  initHazardChart()
+  initSprinklerChart()
+  initDeviceOverviewChart()
+  initDeviceStatsChart()
+}
+
 async function fetchData() {
-  try { const res = await getDashboardStats(); if (res?.data) stats.value = res.data } catch(e) {}
-  try { const res = await getEnvironmentRealtime(); if (res?.data) envData.value = res.data } catch(e) {}
-  try { const res = await getSafetyHazards(); if (res?.data) hazardChartData.value = res.data } catch(e) {}
-  try { const res = await getSprayRecords(); if (res?.data) sprinklerRecords.value = res.data } catch(e) {}
-  try { const res = await getAlarmList(); if (res?.data) alarmList.value = res.data } catch(e) {}
-  try { const res = await getDeviceOverview(); if (res?.data) deviceOverview.value = res.data } catch(e) {}
-  try { const res = await getDeviceStatistics(); if (res?.data) deviceStatistics.value = res.data } catch(e) {}
+  try {
+    const res = await getDashboardData()
+    if (!res || res.code !== 0) return
+    const d = res.data || {}
+
+    // 顶部统计卡片：从危大工程设备统计聚合
+    const buildList = Array.isArray(d.buildAssetCount) ? d.buildAssetCount : []
+    const deviceTotal = buildList.reduce((s, x) => s + (Number(x.total_equipment) || 0), 0)
+    const onlineCount = buildList.reduce((s, x) => s + (Number(x.online_equipment) || 0), 0)
+    const alarmCount = buildList.reduce((s, x) => s + (Number(x.alert_count) || 0), 0)
+    stats.value = {
+      deviceTotal,
+      onlineCount,
+      alarmCount,
+      // 后端接口暂无喷淋运行时长字段，保留占位默认值
+      sprinklerHours: 38
+    }
+
+    // 预警事件列表
+    alarmList.value = ((d.alertList || d.alertListPage) || []).slice(0, 5)
+    // 喷淋记录
+    sprinklerRecords.value = d.spraySystemList || []
+    // 环境实时数据（各监测点最新一条）
+    envData.value = d.realTimeList || []
+
+    // 三个图表的数据源
+    deviceOverview.value = buildList
+    deviceStatistics.value = buildList
+    hazardChartData.value = d.alertTypeAndCount || []
+
+    // 数据就绪后刷新图表
+    renderCharts()
+  } catch (e) {
+    // 接口异常时保留默认占位展示，不做额外提示
+  }
 }
 
 onMounted(() => {
   fetchData()
   setTimeout(() => {
-    initEnvChart()
-    initHazardChart()
-    initSprinklerChart()
-    initDeviceOverviewChart()
-    initDeviceStatsChart()
+    renderCharts()
   }, 200)
   resizeHandler = handleResize
   window.addEventListener('resize', resizeHandler)
@@ -549,18 +604,25 @@ onUnmounted(() => {
                 <tr>
                   <th>区域</th>
                   <th>设备编号</th>
-                  <th>喷淋量(L)</th>
+                  <th>运行状态</th>
                   <th>时间</th>
                   <th>状态</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="i in 5" :key="i">
-                  <td>A区-主体施工区</td>
-                  <td>SP-00{{ i }}</td>
-                  <td>{{ 150 + i * 20 }}</td>
-                  <td>{{ new Date().toLocaleTimeString('zh-CN') }}</td>
-                  <td><span class="tag tag-green">正常</span></td>
+                <tr v-for="(item, idx) in sprinklerRecords" :key="item.id || idx">
+                  <td>{{ item.asset_location || item.point_name || '--' }}</td>
+                  <td>{{ item.asset_name || item.monitor_point_id || '--' }}</td>
+                  <td>{{ item.operation_type === '1' ? '运行中' : (item.operation_type === '0' ? '已关闭' : '--') }}</td>
+                  <td>{{ (item.operation_time || '').replace('T', ' ').slice(0, 19) || '--' }}</td>
+                  <td>
+                    <span class="tag" :class="item.operation_type === '0' ? 'tag-red' : 'tag-green'">
+                      {{ item.operation_type === '0' ? '关闭' : (item.operation_type === '1' ? '正常' : '--') }}
+                    </span>
+                  </td>
+                </tr>
+                <tr v-if="!sprinklerRecords.length">
+                  <td colspan="5" style="text-align:center;color:#5a6a7a;">暂无喷淋记录</td>
                 </tr>
               </tbody>
             </table>

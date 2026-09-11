@@ -4,6 +4,11 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -145,5 +150,21 @@ public class EquipmentAssets implements Serializable {
 
     @TableField(exist = false)
     @Schema(description = "扩展参数（JSON字符串，用于危大工程设备参数初始化，如塔机额定力矩等）")
+    @JsonDeserialize(using = EquipmentAssets.StringOrObjectDeserializer.class)
     private String extraParams;
+
+    /**
+     * 扩展参数反序列化器：兼容前端/测试以 JSON 对象或 JSON 字符串两种形式传递。
+     * 字段实际类型为 String，当请求体传的是对象时，将其序列化为 JSON 字符串存储。
+     */
+    public static class StringOrObjectDeserializer extends JsonDeserializer<String> {
+        @Override
+        public String deserialize(JsonParser p, DeserializationContext ctxt) throws java.io.IOException {
+            JsonNode node = p.getCodec().readTree(p);
+            if (node.isTextual() || node.isNull()) {
+                return node.isNull() ? null : node.textValue();
+            }
+            return node.toString();
+        }
+    }
 }
