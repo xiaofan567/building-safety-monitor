@@ -9,11 +9,13 @@ import EquipmentType from '@/views/EquipmentType.vue'
 import DeviceSimulation from '@/views/DeviceSimulation.vue'
 import EquipmentLocation from '@/views/EquipmentLocation.vue'
 import EquipmentAssets from '@/views/EquipmentAssets.vue'
+import EquipmentOverview from '@/views/EquipmentOverview.vue'
 
 const router = useRouter()
 const store = useStore()
 const currentComponent = ref('MainPage')
 const activeMenu = ref('dashboard')
+const overviewType = ref(5)
 
 const constructionMenuVisible = ref(false)
 const equipmentMenuVisible = ref(false)
@@ -27,10 +29,11 @@ const siteOptions = [
 ]
 
 const equipmentOptions = [
-  { label: '塔吊设备', value: 'tower_crane' },
-  { label: '升降机', value: 'elevator' },
-  { label: '环境传感器', value: 'sensor' },
-  { label: '喷淋设备', value: 'spray' }
+  { label: '机械设备总览', value: 5 },
+  { label: '塔吊', value: 1 },
+  { label: '升降机', value: 2 },
+  { label: '深基坑', value: 3 },
+  { label: '高支模', value: 4 }
 ]
 
 const menuItems = [
@@ -43,9 +46,14 @@ const menuItems = [
 ]
 
 const getCurrentComponent = computed(() => {
-  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets }
+  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets, 'EquipmentOverview': EquipmentOverview }
   return map[currentComponent.value] || MainPage
 })
+
+// 设备总览组件需要把顶部下拉选中的类型作为初始类型传入
+const overviewProps = computed(() =>
+  currentComponent.value === 'EquipmentOverview' ? { initialType: overviewType.value } : {}
+)
 
 function handleMenuClick(key) {
   activeMenu.value = key
@@ -114,6 +122,14 @@ function selectEquipmentAssets() {
   deviceMenuVisible.value = false
   activeMenu.value = 'device'
   currentComponent.value = 'EquipmentAssets'
+}
+
+// 施工设备下拉 - 选择设备总览类型
+function selectOverview(type) {
+  equipmentMenuVisible.value = false
+  activeMenu.value = 'equipment'
+  overviewType.value = type
+  currentComponent.value = 'EquipmentOverview'
 }
 
 function handleClickOutside(event) {
@@ -218,7 +234,7 @@ onUnmounted(() => {
           </button>
           <transition name="dropdown-fade">
             <div class="dropdown-menu" v-show="equipmentMenuVisible">
-              <div class="dropdown-item" v-for="opt in equipmentOptions" :key="opt.value" @click.stop="equipmentMenuVisible = false">
+              <div class="dropdown-item" v-for="opt in equipmentOptions" :key="opt.value" @click.stop="selectOverview(opt.value)">
                 {{ opt.label }}
               </div>
             </div>
@@ -246,7 +262,7 @@ onUnmounted(() => {
     </header>
 
     <main class="main-content">
-      <component :is="getCurrentComponent" />
+      <component :is="getCurrentComponent" v-bind="overviewProps" />
     </main>
   </div>
 </template>
