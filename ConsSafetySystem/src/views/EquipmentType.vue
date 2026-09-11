@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, onMounted, nextTick, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getEquipmentTypeTree, saveEquipmentType, updateEquipmentType, deleteEquipmentType } from '@/api/equipmentType'
+import { getEquipmentTypeTree, saveEquipmentType, deleteEquipmentType } from '@/api/equipmentType'
 
 const treeData = ref([])
 const selectedNode = ref(null)
@@ -23,24 +23,14 @@ const rules = {
   typeName: [{ required: true, message: '请输入类型名称', trigger: 'blur' }]
 }
 
-function buildTree(list, pid = 0) {
-  const result = []
-  list.forEach(item => {
-    if (item.typePid === pid) {
-      const children = buildTree(list, item.typeId)
-      const node = {
-        _expanded: true,
-        ...item,
-        typePid: item.typePid,
-        id: item.typeId
-      }
-      if (children.length > 0) {
-        node.children = children
-      }
-      result.push(node)
-    }
-  })
-  return result
+// 后端 queryTreeList 直接返回嵌套树，这里只需补充前端用到的默认展开状态
+function normalize(nodes) {
+  if (!Array.isArray(nodes)) return []
+  return nodes.map(node => ({
+    ...node,
+    _expanded: true,
+    children: node.children && node.children.length ? normalize(node.children) : undefined
+  }))
 }
 
 const flatTreeList = computed(() => {
@@ -48,7 +38,9 @@ const flatTreeList = computed(() => {
   function flatten(nodes, depth = 0) {
     if (!nodes) return
     nodes.forEach(node => {
-      result.push({ ...node, _depth: depth })
+      // 直接推入真实节点引用（非浅拷贝），让 toggleExpand 能修改原节点状态
+      node._depth = depth
+      result.push(node)
       if (node.children && node.children.length > 0 && node._expanded) {
         flatten(node.children, depth + 1)
       }
@@ -63,7 +55,7 @@ async function fetchTree() {
     const res = await getEquipmentTypeTree()
     const list = res?.data || []
     if (Array.isArray(list) && list.length > 0) {
-      treeData.value = buildTree(list)
+      treeData.value = normalize(list)
       if (!selectedNode.value) {
         autoSelectFirst()
       }
@@ -137,14 +129,12 @@ async function handleSave() {
       typePid: form.typePid,
       sort: form.sort
     }
+    // 后端 save 接口按是否传入 typeId 自动区分新增/编辑
     if (isEdit.value) {
       params.typeId = form.typeId
-      await updateEquipmentType(params)
-      ElMessage.success('编辑成功')
-    } else {
-      await saveEquipmentType(params)
-      ElMessage.success('新增成功')
     }
+    await saveEquipmentType(params)
+    ElMessage.success(isEdit.value ? '编辑成功' : '新增成功')
     form.typeId = null
     form.typeCode = ''
     form.typeName = ''

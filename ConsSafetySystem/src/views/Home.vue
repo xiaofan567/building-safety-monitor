@@ -7,6 +7,8 @@ import { logout } from '@/api/login'
 import MainPage from '@/views/MainPage.vue'
 import EquipmentType from '@/views/EquipmentType.vue'
 import DeviceSimulation from '@/views/DeviceSimulation.vue'
+import EquipmentLocation from '@/views/EquipmentLocation.vue'
+import EquipmentAssets from '@/views/EquipmentAssets.vue'
 
 const router = useRouter()
 const store = useStore()
@@ -16,6 +18,7 @@ const activeMenu = ref('dashboard')
 const constructionMenuVisible = ref(false)
 const equipmentMenuVisible = ref(false)
 const userMenuVisible = ref(false)
+const deviceMenuVisible = ref(false)
 
 const siteOptions = [
   { label: 'A区 - 主体施工区', value: 'area_a' },
@@ -32,7 +35,6 @@ const equipmentOptions = [
 
 const menuItems = [
   { key: 'dashboard', label: '监控总览', icon: 'overview', comp: 'MainPage' },
-  { key: 'device', label: '设备管理', icon: 'device', comp: 'EquipmentType' },
   { key: 'simulation', label: '设备模拟', icon: 'simulation', comp: 'DeviceSimulation' },
   { key: 'environment', label: '环境监控', icon: 'env', comp: 'MainPage' },
   { key: 'personnel', label: '人员安全', icon: 'person', comp: 'MainPage' },
@@ -41,7 +43,7 @@ const menuItems = [
 ]
 
 const getCurrentComponent = computed(() => {
-  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation }
+  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets }
   return map[currentComponent.value] || MainPage
 })
 
@@ -83,12 +85,42 @@ function toggleUserMenu() {
   userMenuVisible.value = !userMenuVisible.value
   constructionMenuVisible.value = false
   equipmentMenuVisible.value = false
+  deviceMenuVisible.value = false
+}
+
+function toggleDeviceMenu() {
+  deviceMenuVisible.value = !deviceMenuVisible.value
+  constructionMenuVisible.value = false
+  equipmentMenuVisible.value = false
+  userMenuVisible.value = false
+}
+
+// 设备管理下拉 - 选择“设备类型管理”
+function selectDeviceType() {
+  deviceMenuVisible.value = false
+  activeMenu.value = 'device'
+  currentComponent.value = 'EquipmentType'
+}
+
+// 设备管理下拉 - 选择“设备位置管理”
+function selectEquipmentLocation() {
+  deviceMenuVisible.value = false
+  activeMenu.value = 'device'
+  currentComponent.value = 'EquipmentLocation'
+}
+
+// 设备管理下拉 - 选择“设备管理”
+function selectEquipmentAssets() {
+  deviceMenuVisible.value = false
+  activeMenu.value = 'device'
+  currentComponent.value = 'EquipmentAssets'
 }
 
 function handleClickOutside(event) {
   const constructionEl = document.querySelector('.nav-dropdown-construction')
   const equipmentEl = document.querySelector('.nav-dropdown-equipment')
   const userEl = document.querySelector('.nav-dropdown-user')
+  const deviceEl = document.querySelector('.nav-dropdown-device')
   if (constructionEl && !constructionEl.contains(event.target)) {
     constructionMenuVisible.value = false
   }
@@ -97,6 +129,9 @@ function handleClickOutside(event) {
   }
   if (userEl && !userEl.contains(event.target)) {
     userMenuVisible.value = false
+  }
+  if (deviceEl && !deviceEl.contains(event.target)) {
+    deviceMenuVisible.value = false
   }
 }
 
@@ -137,6 +172,24 @@ onUnmounted(() => {
             @click="handleMenuClick(item.key)"
           >
             {{ item.label }}
+          </div>
+
+          <div class="nav-dropdown nav-dropdown-device">
+            <div
+              class="nav-item nav-item-dropdown"
+              :class="{ active: activeMenu === 'device' }"
+              @click.stop="toggleDeviceMenu"
+            >
+              设备管理
+              <svg class="arr" :class="{ rotated: deviceMenuVisible }" viewBox="0 0 24 24" fill="none" width="12" height="12"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <transition name="dropdown-fade">
+              <div class="dropdown-menu" v-show="deviceMenuVisible">
+                <div class="dropdown-item" @click.stop="selectDeviceType">设备类型管理</div>
+                <div class="dropdown-item" @click.stop="selectEquipmentLocation">设备位置管理</div>
+                <div class="dropdown-item" @click.stop="selectEquipmentAssets">设备管理</div>
+              </div>
+            </transition>
           </div>
         </nav>
       </div>
@@ -267,6 +320,27 @@ onUnmounted(() => {
   color: #fff;
   background: var(--primary-grad);
   box-shadow: 0 3px 10px rgba(176, 123, 62, 0.25);
+}
+
+.nav-item-dropdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-item-dropdown .arr {
+  transition: transform 0.2s;
+}
+
+.nav-item-dropdown .arr.rotated {
+  transform: rotate(180deg);
+}
+
+.dropdown-item-disabled,
+.dropdown-item-disabled:hover {
+  cursor: not-allowed;
+  color: var(--text-faint);
+  background: transparent;
 }
 
 .navbar-right {

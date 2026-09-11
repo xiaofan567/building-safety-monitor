@@ -43,6 +43,10 @@ public abstract class DeviceDataProcessHandle<T> {
      * @param type 操作类型（add：新增，update：修改，delete：删除）
      */
     public void update(T data, String key, UpdateOperationEnum type) {
+        // 无平台设备标识的设备不参与 TCP 内存缓存同步（ConcurrentHashMap 不允许 null key）
+        if (key == null || key.isEmpty()) {
+            return;
+        }
         if (type == UpdateOperationEnum.DELETE) {
             dataMap.remove(key);
         } else {
