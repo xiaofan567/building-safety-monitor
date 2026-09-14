@@ -11,6 +11,7 @@ import EquipmentLocation from '@/views/EquipmentLocation.vue'
 import EquipmentAssets from '@/views/EquipmentAssets.vue'
 import DeviceMonitoringPointMng from '@/views/DeviceMonitoringPointMng.vue'
 import EnvironmentMonitoringMng from '@/views/EnvironmentMonitoringMng.vue'
+import EnvironmentalMonitoring from '@/views/EnvironmentalMonitoring.vue'
 
 const router = useRouter()
 const store = useStore()
@@ -21,6 +22,7 @@ const constructionMenuVisible = ref(false)
 const equipmentMenuVisible = ref(false)
 const userMenuVisible = ref(false)
 const deviceMenuVisible = ref(false)
+const environmentMenuVisible = ref(false)
 
 const siteOptions = [
   { label: 'A区 - 主体施工区', value: 'area_a' },
@@ -38,14 +40,14 @@ const equipmentOptions = [
 const menuItems = [
   { key: 'dashboard', label: '监控总览', icon: 'overview', comp: 'MainPage' },
   { key: 'simulation', label: '设备模拟', icon: 'simulation', comp: 'DeviceSimulation' },
-  { key: 'environment', label: '环境监控', icon: 'env', comp: 'EnvironmentMonitoringMng' },
+  { key: 'environment', label: '环境监控', icon: 'env', comp: 'EnvironmentalMonitoring' },
   { key: 'personnel', label: '人员安全', icon: 'person', comp: 'MainPage' },
   { key: 'alarm', label: '预警事件', icon: 'alarm', comp: 'MainPage' },
   { key: 'system', label: '系统管理', icon: 'system', comp: 'MainPage' }
 ]
 
 const getCurrentComponent = computed(() => {
-const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets, 'DeviceMonitoringPointMng': DeviceMonitoringPointMng, 'EnvironmentMonitoringMng': EnvironmentMonitoringMng }
+const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets, 'DeviceMonitoringPointMng': DeviceMonitoringPointMng, 'EnvironmentMonitoringMng': EnvironmentMonitoringMng, 'EnvironmentalMonitoring': EnvironmentalMonitoring }
   return map[currentComponent.value] || MainPage
 })
 
@@ -75,12 +77,14 @@ function toggleConstructionMenu() {
   constructionMenuVisible.value = !constructionMenuVisible.value
   equipmentMenuVisible.value = false
   userMenuVisible.value = false
+  environmentMenuVisible.value = false
 }
 
 function toggleEquipmentMenu() {
   equipmentMenuVisible.value = !equipmentMenuVisible.value
   constructionMenuVisible.value = false
   userMenuVisible.value = false
+  environmentMenuVisible.value = false
 }
 
 function toggleUserMenu() {
@@ -88,6 +92,7 @@ function toggleUserMenu() {
   constructionMenuVisible.value = false
   equipmentMenuVisible.value = false
   deviceMenuVisible.value = false
+  environmentMenuVisible.value = false
 }
 
 function toggleDeviceMenu() {
@@ -95,6 +100,29 @@ function toggleDeviceMenu() {
   constructionMenuVisible.value = false
   equipmentMenuVisible.value = false
   userMenuVisible.value = false
+  environmentMenuVisible.value = false
+}
+
+function toggleEnvironmentMenu() {
+  environmentMenuVisible.value = !environmentMenuVisible.value
+  constructionMenuVisible.value = false
+  equipmentMenuVisible.value = false
+  userMenuVisible.value = false
+  deviceMenuVisible.value = false
+}
+
+// 环境监控下拉 - 选择“环境实时监测”
+function selectEnvironmentalMonitoring() {
+  environmentMenuVisible.value = false
+  activeMenu.value = 'environment'
+  currentComponent.value = 'EnvironmentalMonitoring'
+}
+
+// 环境监控下拉 - 选择“环境监测管理”
+function selectEnvironmentMonitoringMng() {
+  environmentMenuVisible.value = false
+  activeMenu.value = 'environment'
+  currentComponent.value = 'EnvironmentMonitoringMng'
 }
 
 // 设备管理下拉 - 选择“设备类型管理”
@@ -129,6 +157,7 @@ function handleClickOutside(event) {
   const equipmentEl = document.querySelector('.nav-dropdown-equipment')
   const userEl = document.querySelector('.nav-dropdown-user')
   const deviceEl = document.querySelector('.nav-dropdown-device')
+  const environmentEl = document.querySelector('.nav-dropdown-environment')
   if (constructionEl && !constructionEl.contains(event.target)) {
     constructionMenuVisible.value = false
   }
@@ -140,6 +169,9 @@ function handleClickOutside(event) {
   }
   if (deviceEl && !deviceEl.contains(event.target)) {
     deviceMenuVisible.value = false
+  }
+  if (environmentEl && !environmentEl.contains(event.target)) {
+    environmentMenuVisible.value = false
   }
 }
 
@@ -172,15 +204,33 @@ onUnmounted(() => {
         </div>
 
         <nav class="main-nav">
-          <div
-            v-for="item in menuItems"
-            :key="item.key"
-            class="nav-item"
-            :class="{ active: activeMenu === item.key }"
-            @click="handleMenuClick(item.key)"
-          >
-            {{ item.label }}
-          </div>
+          <template v-for="item in menuItems" :key="item.key">
+            <div
+              v-if="item.key !== 'environment'"
+              class="nav-item"
+              :class="{ active: activeMenu === item.key }"
+              @click="handleMenuClick(item.key)"
+            >
+              {{ item.label }}
+            </div>
+
+            <div v-else class="nav-dropdown nav-dropdown-environment">
+              <div
+                class="nav-item nav-item-dropdown"
+                :class="{ active: activeMenu === 'environment' }"
+                @click.stop="toggleEnvironmentMenu"
+              >
+                环境监控
+                <svg class="arr" :class="{ rotated: environmentMenuVisible }" viewBox="0 0 24 24" fill="none" width="12" height="12"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+              <transition name="dropdown-fade">
+                <div class="dropdown-menu" v-show="environmentMenuVisible">
+                  <div class="dropdown-item" @click.stop="selectEnvironmentalMonitoring">环境实时监测</div>
+                  <div class="dropdown-item" @click.stop="selectEnvironmentMonitoringMng">环境监测管理</div>
+                </div>
+              </transition>
+            </div>
+          </template>
 
           <div class="nav-dropdown nav-dropdown-device">
             <div
