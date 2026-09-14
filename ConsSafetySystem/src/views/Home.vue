@@ -14,7 +14,7 @@ import EnvironmentMonitoringMng from '@/views/EnvironmentMonitoringMng.vue'
 import EnvironmentalMonitoring from '@/views/EnvironmentalMonitoring.vue'
 import EnvironmentalHistoryData from '@/views/EnvironmentalHistoryData.vue'
 import SprayTask from '@/views/SprayTask.vue'
-import AutoSprayRecord from '@/views/AutoSprayRecord.vue'
+import EnvironmentalSprayingRecord from '@/views/EnvironmentalSprayingRecord.vue'
 import EnvironmentAlarmRecord from '@/views/EnvironmentAlarmRecord.vue'
 
 const router = useRouter()
@@ -59,7 +59,7 @@ const getCurrentComponent = computed(() => {
     EnvironmentalMonitoring,
     EnvironmentalHistoryData,
     SprayTask,
-    AutoSprayRecord,
+    EnvironmentalSprayingRecord,
     EnvironmentAlarmRecord
   }
   return map[currentComponent.value] || MainPage
@@ -189,7 +189,7 @@ function selectSprayTask() {
 function selectAutoSprayRecord() {
   constructionEnvVisible.value = false
   activeMenu.value = 'constructionEnv'
-  currentComponent.value = 'AutoSprayRecord'
+  currentComponent.value = 'EnvironmentalSprayingRecord'
 }
 
 // 施工环境下拉 - 选择“环境监测报警记录”
