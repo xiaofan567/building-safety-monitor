@@ -9,6 +9,8 @@ import EquipmentType from '@/views/EquipmentType.vue'
 import DeviceSimulation from '@/views/DeviceSimulation.vue'
 import EquipmentLocation from '@/views/EquipmentLocation.vue'
 import EquipmentAssets from '@/views/EquipmentAssets.vue'
+import DeviceMonitoringPointMng from '@/views/DeviceMonitoringPointMng.vue'
+import EnvironmentMonitoringMng from '@/views/EnvironmentMonitoringMng.vue'
 
 const router = useRouter()
 const store = useStore()
@@ -36,14 +38,14 @@ const equipmentOptions = [
 const menuItems = [
   { key: 'dashboard', label: '监控总览', icon: 'overview', comp: 'MainPage' },
   { key: 'simulation', label: '设备模拟', icon: 'simulation', comp: 'DeviceSimulation' },
-  { key: 'environment', label: '环境监控', icon: 'env', comp: 'MainPage' },
+  { key: 'environment', label: '环境监控', icon: 'env', comp: 'EnvironmentMonitoringMng' },
   { key: 'personnel', label: '人员安全', icon: 'person', comp: 'MainPage' },
   { key: 'alarm', label: '预警事件', icon: 'alarm', comp: 'MainPage' },
   { key: 'system', label: '系统管理', icon: 'system', comp: 'MainPage' }
 ]
 
 const getCurrentComponent = computed(() => {
-  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets }
+const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets, 'DeviceMonitoringPointMng': DeviceMonitoringPointMng, 'EnvironmentMonitoringMng': EnvironmentMonitoringMng }
   return map[currentComponent.value] || MainPage
 })
 
@@ -114,6 +116,12 @@ function selectEquipmentAssets() {
   deviceMenuVisible.value = false
   activeMenu.value = 'device'
   currentComponent.value = 'EquipmentAssets'
+}
+
+function selectDeviceMonitoringPoint() {
+  deviceMenuVisible.value = false
+  activeMenu.value = 'device'
+  currentComponent.value = 'DeviceMonitoringPointMng'
 }
 
 function handleClickOutside(event) {
@@ -188,6 +196,7 @@ onUnmounted(() => {
                 <div class="dropdown-item" @click.stop="selectDeviceType">设备类型管理</div>
                 <div class="dropdown-item" @click.stop="selectEquipmentLocation">设备位置管理</div>
                 <div class="dropdown-item" @click.stop="selectEquipmentAssets">设备管理</div>
+                <div class="dropdown-item" @click.stop="selectDeviceMonitoringPoint">设备监测点管理</div>
               </div>
             </transition>
           </div>
@@ -485,3 +494,4 @@ onUnmounted(() => {
   overflow: hidden;
 }
 </style>
+

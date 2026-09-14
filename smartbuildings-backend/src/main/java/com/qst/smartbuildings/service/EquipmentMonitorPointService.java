@@ -13,11 +13,13 @@ public interface EquipmentMonitorPointService {
     /**
      * 分页查询监测点列表（联表补充设备名称）
      *
-     * @param page  当前页码
-     * @param limit 每页条数
+     * @param current     当前页码
+     * @param size        每页条数
+     * @param monitorType 监测点类型（可选）
+     * @param pointName   监测点名称（可选，模糊匹配）
      * @return 监测点分页数据
      */
-    BPage<EquipmentMonitorPoint> pageList(long page, long limit);
+    BPage<EquipmentMonitorPoint> pageList(long current, long size, String monitorType, String pointName);
 
     /**
      * 查询监测点详情

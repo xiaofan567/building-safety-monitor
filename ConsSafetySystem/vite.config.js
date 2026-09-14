@@ -1,10 +1,16 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
+  cacheDir: 'C:/Users/29500/.vite-cache-con',
+
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
@@ -13,7 +19,9 @@ export default defineConfig({
     }
   },
   build: {
-    sourcemap: false, // 禁用生产环境的sourcemap生成
+    sourcemap: false,
+    outDir: 'C:/Users/29500/con-dist-out',
+    emptyOutDir: true,
   },
   server: {
     fs: {
@@ -26,3 +34,5 @@ export default defineConfig({
     exclude: ['flvjs']
   }
 })
+
+
