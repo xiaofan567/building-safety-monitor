@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -28,6 +30,8 @@ import java.util.Map;
 @RequestMapping("/equipmentMonitorPoint")
 public class EquipmentMonitorPointController {
 
+    private static final Logger log = LoggerFactory.getLogger(EquipmentMonitorPointController.class);
+
     private final EquipmentMonitorPointService equipmentMonitorPointService;
     private final EquipmentAssetsDataProcessHandle dataProcessHandle;
 
@@ -40,9 +44,13 @@ public class EquipmentMonitorPointController {
     @Operation(summary = "查询监测点列表")
     @PostMapping("/list")
     public Result<BPage<EquipmentMonitorPoint>> list(@RequestBody(required = false) Map<String, Object> params) {
-        long page = numberValue(params, "page", 1L);
-        long limit = numberValue(params, "limit", 10L);
-        return Result.ok(equipmentMonitorPointService.pageList(page, limit));
+        long current = numberValue(params, "current", 1L);
+        long size = numberValue(params, "size", 10L);
+        String monitorType = stringValue(params, "monitorType");
+        String pointName = stringValue(params, "pointName");
+        log.info("查询监测点列表 current={}, size={}, monitorType={}, pointName={}",
+                current, size, monitorType, pointName);
+        return Result.ok(equipmentMonitorPointService.pageList(current, size, monitorType, pointName));
     }
 
     @Operation(summary = "查询监测点详情")
@@ -86,5 +94,17 @@ public class EquipmentMonitorPointController {
         } catch (NumberFormatException e) {
             return defaultValue;
         }
+    }
+
+    private String stringValue(Map<String, Object> params, String key) {
+        if (params == null) {
+            return null;
+        }
+        Object value = params.get(key);
+        if (value == null) {
+            return null;
+        }
+        String text = value.toString().trim();
+        return text.isEmpty() ? null : text;
     }
 }
