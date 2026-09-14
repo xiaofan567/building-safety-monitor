@@ -159,3 +159,33 @@ export async function selectSprayData(data) {
   })
   return response?.data ?? {}
 }
+
+export async function selectSprayTaskData(data) {
+  const response = await request({
+    url: '/spraySystem/taskList',
+    method: 'post',
+    data,
+    headers: { 'Content-Type': 'application/json;charset=UTF-8' }
+  })
+  return response?.data ?? {}
+}
+
+export async function saveSprayTask(data) {
+  const response = await request({
+    url: '/spraySystem/update',
+    method: 'post',
+    data,
+    headers: { 'Content-Type': 'application/json;charset=UTF-8' }
+  })
+  return response?.data ?? {}
+}
+
+export async function deleteSprayTask(id) {
+  const response = await request({
+    url: '/spraySystem/delete',
+    method: 'post',
+    data: { id },
+    headers: { 'Content-Type': 'application/json;charset=UTF-8' }
+  })
+  return response?.data ?? {}
+}
