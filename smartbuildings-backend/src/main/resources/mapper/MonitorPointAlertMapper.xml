@@ -42,15 +42,18 @@
         LEFT JOIN equipment_location loc
             ON eq_assets.location_id = loc.location_id
         <where>
-            <!-- 不查环境报警 -->
-            mp_alert.monitor_alert_type != '4'
+            <!-- 指定设备报警类型时按条件查询，未指定时保持设备报警列表不混入环境报警 -->
+            <choose>
+                <when test="data.monitorAlertType != null and data.monitorAlertType != ''">
+                    AND mp_alert.monitor_alert_type = #{data.monitorAlertType}
+                </when>
+                <otherwise>
+                    AND mp_alert.monitor_alert_type != '4'
+                </otherwise>
+            </choose>
             <!-- 1. 报警分类筛选（alert_type：0预警/1报警/2控制） -->
             <if test="data.alertType != null and data.alertType != ''">
                 AND mp_alert.alert_type = #{data.alertType}
-            </if>
-            <!-- 2. 设备报警类型筛选（monitorAlertType：1基坑/2塔机/3升降机等） -->
-            <if test="data.monitorAlertType != null and data.monitorAlertType != ''">
-                AND mp_alert.monitor_alert_type = #{data.monitorAlertType}
             </if>
             <!-- 3. 设备ID筛选（equipment_id） -->
             <if test="data.assetId != null">
