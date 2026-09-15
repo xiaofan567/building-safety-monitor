@@ -43,10 +43,17 @@ public class EquipmentMonitorPointServiceImpl
     }
 
     @Override
-    public BPage<EquipmentMonitorPoint> pageList(long page, long limit) {
-        BPage<EquipmentMonitorPoint> pageData = new BPage<>(page, limit);
-        this.page(pageData, new LambdaQueryWrapper<EquipmentMonitorPoint>()
-                .orderByAsc(EquipmentMonitorPoint::getSort));
+    public BPage<EquipmentMonitorPoint> pageList(long current, long size, String monitorType, String pointName) {
+        BPage<EquipmentMonitorPoint> pageData = new BPage<>(current, size);
+        LambdaQueryWrapper<EquipmentMonitorPoint> wrapper = new LambdaQueryWrapper<EquipmentMonitorPoint>()
+                .orderByAsc(EquipmentMonitorPoint::getSort);
+        if (StringUtils.hasText(monitorType)) {
+            wrapper.eq(EquipmentMonitorPoint::getMonitorType, monitorType);
+        }
+        if (StringUtils.hasText(pointName)) {
+            wrapper.like(EquipmentMonitorPoint::getPointName, pointName);
+        }
+        this.page(pageData, wrapper);
         fillEquipmentNames(pageData.getRecords());
         return pageData;
     }

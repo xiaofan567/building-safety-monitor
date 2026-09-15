@@ -15,6 +15,7 @@ import com.qst.smartbuildings.mapper.EquipmentOfflineMapper;
 import com.qst.smartbuildings.mapper.MonitorPointAlertMapper;
 import com.qst.smartbuildings.mapper.MonitorPointValueMapper;
 import com.qst.smartbuildings.service.DeviceDataService;
+import com.qst.smartbuildings.tcpserver.SpraySystemDataProcessService;
 import com.qst.smartbuildings.util.RedisClient;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +57,7 @@ public class EquipmentAssetsDataProcessHandle {
     private final MonitorPointAlertMapper alertMapper;
     private final DeviceDataService deviceDataService;
     private final RedisClient redisClient;
+    private final SpraySystemDataProcessService spraySystemDataProcessService;
 
     // 设备资产Map，以平台设备标识platformEqCode为Key（用ConcurrentHashMap保证多线程安全）
     private Map<String, EquipmentAssets> equipmentAssetsMap;
@@ -68,7 +70,8 @@ public class EquipmentAssetsDataProcessHandle {
                                             MonitorPointValueMapper monitorPointValueMapper,
                                             MonitorPointAlertMapper alertMapper,
                                             DeviceDataService deviceDataService,
-                                            RedisClient redisClient) {
+                                            RedisClient redisClient,
+                                            SpraySystemDataProcessService spraySystemDataProcessService) {
         this.equipmentAssetsMapper = equipmentAssetsMapper;
         this.equipmentMonitorPointMapper = equipmentMonitorPointMapper;
         this.equipmentOfflineMapper = equipmentOfflineMapper;
@@ -76,6 +79,7 @@ public class EquipmentAssetsDataProcessHandle {
         this.alertMapper = alertMapper;
         this.deviceDataService = deviceDataService;
         this.redisClient = redisClient;
+        this.spraySystemDataProcessService = spraySystemDataProcessService;
     }
 
     /**
@@ -239,6 +243,8 @@ public class EquipmentAssetsDataProcessHandle {
             return;
         }
         Double dataValue = Double.valueOf(s);
+        // 监测点数据越界时，异步控制关联位置的喷淋设备
+        spraySystemDataProcessService.processSpraySystemData(point, dataValue);
         // 如果检测时间为0，则直接进行数据处理
         if (point.getRangeTime() == null || point.getRangeTime() == 0) {
             checkPoint(point, dataValue);

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qst.smartbuildings.mapper.environment.SprayTaskMapper">
+
+    <!-- 分页查询喷淋任务 -->
+    <select id="selectTaskByPage" parameterType="com.qst.smartbuildings.entity.param.SprayTaskParam" resultType="com.qst.smartbuildings.entity.environment.SprayTask">
+        SELECT
+            st.*,
+            el.location_name
+        FROM
+            spray_task st
+            LEFT JOIN equipment_location el ON st.location_id = el.location_id
+        WHERE
+            1 = 1
+        <!-- 任务名称查询 -->
+        <if test="data.taskName != null and data.taskName != ''">
+            AND st.task_name LIKE CONCAT('%', #{data.taskName}, '%')
+        </if>
+        <!-- 状态查询 -->
+        <if test="data.isEnable != null and data.isEnable != ''">
+            AND st.is_enable = #{data.isEnable}
+        </if>
+        <!-- 排序：按创建时间倒序 -->
+        ORDER BY
+            st.create_time DESC
+    </select>
+
+</mapper>

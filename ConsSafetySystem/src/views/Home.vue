@@ -16,6 +16,13 @@ import FormworkMonitoring from '@/views/FormworkMonitoring.vue'
 import FoundationPitMonitoring from '@/views/FoundationPitMonitoring.vue'
 import EquipmentOnOfflineRecord from '@/views/EquipmentOnOfflineRecord.vue'
 import MonitoringAlarmRecord from '@/views/MonitoringAlarmRecord.vue'
+import DeviceMonitoringPointMng from '@/views/DeviceMonitoringPointMng.vue'
+import EnvironmentMonitoringMng from '@/views/EnvironmentMonitoringMng.vue'
+import EnvironmentalMonitoring from '@/views/EnvironmentalMonitoring.vue'
+import EnvironmentalHistoryData from '@/views/EnvironmentalHistoryData.vue'
+import SprayTask from '@/views/SprayTask.vue'
+import EnvironmentalSprayingRecord from '@/views/EnvironmentalSprayingRecord.vue'
+import EnvironmentAlarmRecord from '@/views/EnvironmentAlarmRecord.vue'
 
 const router = useRouter()
 const store = useStore()
@@ -31,6 +38,8 @@ const constructionMenuVisible = ref(false)
 const equipmentMenuVisible = ref(false)
 const userMenuVisible = ref(false)
 const deviceMenuVisible = ref(false)
+const monitorConfigVisible = ref(false)
+const constructionEnvVisible = ref(false)
 
 const siteOptions = [
   { label: 'A区 - 主体施工区', value: 'area_a' },
@@ -50,15 +59,25 @@ const equipmentOptions = [
 
 const menuItems = [
   { key: 'dashboard', label: '监控总览', icon: 'overview', comp: 'MainPage' },
-  { key: 'simulation', label: '设备模拟', icon: 'simulation', comp: 'DeviceSimulation' },
-  { key: 'environment', label: '环境监控', icon: 'env', comp: 'MainPage' },
-  { key: 'personnel', label: '人员安全', icon: 'person', comp: 'MainPage' },
-  { key: 'alarm', label: '预警事件', icon: 'alarm', comp: 'MainPage' },
-  { key: 'system', label: '系统管理', icon: 'system', comp: 'MainPage' }
+  { key: 'simulation', label: '设备模拟', icon: 'simulation', comp: 'DeviceSimulation' }
 ]
 
 const getCurrentComponent = computed(() => {
   const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets, 'EquipmentOverview': EquipmentOverview, 'TowerMonitoring': TowerMonitoring, 'ElevatorMonitoring': ElevatorMonitoring, 'FormworkMonitoring': FormworkMonitoring, 'FoundationPitMonitoring': FoundationPitMonitoring, 'EquipmentOnOfflineRecord': EquipmentOnOfflineRecord, 'MonitoringAlarmRecord': MonitoringAlarmRecord }
+  const map = {
+    MainPage,
+    EquipmentType,
+    DeviceSimulation,
+    EquipmentLocation,
+    EquipmentAssets,
+    DeviceMonitoringPointMng,
+    EnvironmentMonitoringMng,
+    EnvironmentalMonitoring,
+    EnvironmentalHistoryData,
+    SprayTask,
+    EnvironmentalSprayingRecord,
+    EnvironmentAlarmRecord
+  }
   return map[currentComponent.value] || MainPage
 })
 
@@ -101,30 +120,116 @@ async function handleLogout() {
   router.push('/login')
 }
 
-function toggleConstructionMenu() {
-  constructionMenuVisible.value = !constructionMenuVisible.value
+function closeOtherDropdowns() {
+  constructionMenuVisible.value = false
   equipmentMenuVisible.value = false
   userMenuVisible.value = false
+  deviceMenuVisible.value = false
+  monitorConfigVisible.value = false
+  constructionEnvVisible.value = false
+}
+
+function toggleConstructionMenu() {
+  if (constructionMenuVisible.value) {
+    constructionMenuVisible.value = false
+    return
+  }
+  closeOtherDropdowns()
+  constructionMenuVisible.value = true
 }
 
 function toggleEquipmentMenu() {
-  equipmentMenuVisible.value = !equipmentMenuVisible.value
-  constructionMenuVisible.value = false
-  userMenuVisible.value = false
+  if (equipmentMenuVisible.value) {
+    equipmentMenuVisible.value = false
+    return
+  }
+  closeOtherDropdowns()
+  equipmentMenuVisible.value = true
 }
 
 function toggleUserMenu() {
-  userMenuVisible.value = !userMenuVisible.value
-  constructionMenuVisible.value = false
-  equipmentMenuVisible.value = false
-  deviceMenuVisible.value = false
+  if (userMenuVisible.value) {
+    userMenuVisible.value = false
+    return
+  }
+  closeOtherDropdowns()
+  userMenuVisible.value = true
 }
 
 function toggleDeviceMenu() {
-  deviceMenuVisible.value = !deviceMenuVisible.value
-  constructionMenuVisible.value = false
-  equipmentMenuVisible.value = false
-  userMenuVisible.value = false
+  if (deviceMenuVisible.value) {
+    deviceMenuVisible.value = false
+    return
+  }
+  closeOtherDropdowns()
+  deviceMenuVisible.value = true
+}
+
+function toggleMonitorConfigMenu() {
+  if (monitorConfigVisible.value) {
+    monitorConfigVisible.value = false
+    return
+  }
+  closeOtherDropdowns()
+  monitorConfigVisible.value = true
+}
+
+function toggleConstructionEnvMenu() {
+  if (constructionEnvVisible.value) {
+    constructionEnvVisible.value = false
+    return
+  }
+  closeOtherDropdowns()
+  constructionEnvVisible.value = true
+}
+
+// 监测配置下拉 - 选择“设备监测点管理”
+function selectMonitorPointMng() {
+  monitorConfigVisible.value = false
+  activeMenu.value = 'monitorConfig'
+  currentComponent.value = 'DeviceMonitoringPointMng'
+}
+
+// 监测配置下拉 - 选择“环境监测管理”
+function selectEnvironmentMng() {
+  monitorConfigVisible.value = false
+  activeMenu.value = 'monitorConfig'
+  currentComponent.value = 'EnvironmentMonitoringMng'
+}
+
+// 施工环境下拉 - 选择“环境实时监测”
+function selectEnvironmentalMonitoring() {
+  constructionEnvVisible.value = false
+  activeMenu.value = 'constructionEnv'
+  currentComponent.value = 'EnvironmentalMonitoring'
+}
+
+// 施工环境下拉 - 选择“环境监测历史数据”
+function selectEnvironmentalHistoryData() {
+  constructionEnvVisible.value = false
+  activeMenu.value = 'constructionEnv'
+  currentComponent.value = 'EnvironmentalHistoryData'
+}
+
+// 施工环境下拉 - 选择“喷淋任务”
+function selectSprayTask() {
+  constructionEnvVisible.value = false
+  activeMenu.value = 'constructionEnv'
+  currentComponent.value = 'SprayTask'
+}
+
+// 施工环境下拉 - 选择“自动喷淋记录”
+function selectAutoSprayRecord() {
+  constructionEnvVisible.value = false
+  activeMenu.value = 'constructionEnv'
+  currentComponent.value = 'EnvironmentalSprayingRecord'
+}
+
+// 施工环境下拉 - 选择“环境监测报警记录”
+function selectEnvironmentAlarmRecord() {
+  constructionEnvVisible.value = false
+  activeMenu.value = 'constructionEnv'
+  currentComponent.value = 'EnvironmentAlarmRecord'
 }
 
 // 设备管理下拉 - 选择“设备类型管理”
@@ -179,6 +284,10 @@ function selectOverview(type) {
     // 监测报警记录：进入监测报警记录页（任务6-7）
     currentComponent.value = 'MonitoringAlarmRecord'
   }
+function selectDeviceMonitoringPoint() {
+  deviceMenuVisible.value = false
+  activeMenu.value = 'device'
+  currentComponent.value = 'DeviceMonitoringPointMng'
 }
 
 function handleClickOutside(event) {
@@ -186,6 +295,8 @@ function handleClickOutside(event) {
   const equipmentEl = document.querySelector('.nav-dropdown-equipment')
   const userEl = document.querySelector('.nav-dropdown-user')
   const deviceEl = document.querySelector('.nav-dropdown-device')
+  const monitorEl = document.querySelector('.nav-dropdown-monitor')
+  const constructionEnvEl = document.querySelector('.nav-dropdown-construction-env')
   if (constructionEl && !constructionEl.contains(event.target)) {
     constructionMenuVisible.value = false
   }
@@ -197,6 +308,12 @@ function handleClickOutside(event) {
   }
   if (deviceEl && !deviceEl.contains(event.target)) {
     deviceMenuVisible.value = false
+  }
+  if (monitorEl && !monitorEl.contains(event.target)) {
+    monitorConfigVisible.value = false
+  }
+  if (constructionEnvEl && !constructionEnvEl.contains(event.target)) {
+    constructionEnvVisible.value = false
   }
 }
 
@@ -229,14 +346,51 @@ onUnmounted(() => {
         </div>
 
         <nav class="main-nav">
-          <div
-            v-for="item in menuItems"
-            :key="item.key"
-            class="nav-item"
-            :class="{ active: activeMenu === item.key }"
-            @click="handleMenuClick(item.key)"
-          >
-            {{ item.label }}
+          <template v-for="item in menuItems" :key="item.key">
+            <div
+              class="nav-item"
+              :class="{ active: activeMenu === item.key }"
+              @click="handleMenuClick(item.key)"
+            >
+              {{ item.label }}
+            </div>
+          </template>
+
+          <div class="nav-dropdown nav-dropdown-monitor">
+            <div
+              class="nav-item nav-item-dropdown"
+              :class="{ active: activeMenu === 'monitorConfig' }"
+              @click.stop="toggleMonitorConfigMenu"
+            >
+              监测配置
+              <svg class="arr" :class="{ rotated: monitorConfigVisible }" viewBox="0 0 24 24" fill="none" width="12" height="12"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <transition name="dropdown-fade">
+              <div class="dropdown-menu" v-show="monitorConfigVisible">
+                <div class="dropdown-item" @click.stop="selectMonitorPointMng">设备监测点管理</div>
+                <div class="dropdown-item" @click.stop="selectEnvironmentMng">环境监测管理</div>
+              </div>
+            </transition>
+          </div>
+
+          <div class="nav-dropdown nav-dropdown-construction-env">
+            <div
+              class="nav-item nav-item-dropdown"
+              :class="{ active: activeMenu === 'constructionEnv' }"
+              @click.stop="toggleConstructionEnvMenu"
+            >
+              施工环境
+              <svg class="arr" :class="{ rotated: constructionEnvVisible }" viewBox="0 0 24 24" fill="none" width="12" height="12"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <transition name="dropdown-fade">
+              <div class="dropdown-menu" v-show="constructionEnvVisible">
+                <div class="dropdown-item" @click.stop="selectEnvironmentalMonitoring">环境实时监测</div>
+                <div class="dropdown-item" @click.stop="selectEnvironmentalHistoryData">环境监测历史数据</div>
+                <div class="dropdown-item" @click.stop="selectSprayTask">喷淋任务</div>
+                <div class="dropdown-item" @click.stop="selectAutoSprayRecord">自动喷淋记录</div>
+                <div class="dropdown-item" @click.stop="selectEnvironmentAlarmRecord">环境监测报警记录</div>
+              </div>
+            </transition>
           </div>
 
           <div class="nav-dropdown nav-dropdown-device">
@@ -253,6 +407,7 @@ onUnmounted(() => {
                 <div class="dropdown-item" @click.stop="selectDeviceType">设备类型管理</div>
                 <div class="dropdown-item" @click.stop="selectEquipmentLocation">设备位置管理</div>
                 <div class="dropdown-item" @click.stop="selectEquipmentAssets">设备管理</div>
+                <div class="dropdown-item" @click.stop="selectDeviceMonitoringPoint">设备监测点管理</div>
               </div>
             </transition>
           </div>
@@ -316,6 +471,7 @@ onUnmounted(() => {
     </main>
   </div>
 </template>
+
 
 <style scoped>
 .home-layout {
@@ -561,3 +717,4 @@ onUnmounted(() => {
   overflow: hidden;
 }
 </style>
+
