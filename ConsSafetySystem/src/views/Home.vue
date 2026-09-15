@@ -15,6 +15,7 @@ import ElevatorMonitoring from '@/views/ElevatorMonitoring.vue'
 import FormworkMonitoring from '@/views/FormworkMonitoring.vue'
 import FoundationPitMonitoring from '@/views/FoundationPitMonitoring.vue'
 import EquipmentOnOfflineRecord from '@/views/EquipmentOnOfflineRecord.vue'
+import MonitoringAlarmRecord from '@/views/MonitoringAlarmRecord.vue'
 
 const router = useRouter()
 const store = useStore()
@@ -43,7 +44,8 @@ const equipmentOptions = [
   { label: '升降机', value: 2 },
   { label: '高支模', value: 4 },
   { label: '深基坑', value: 3 },
-  { label: '设备上下线记录', value: 6 }
+  { label: '设备上下线记录', value: 6 },
+  { label: '监测报警记录', value: 7 }
 ]
 
 const menuItems = [
@@ -56,7 +58,7 @@ const menuItems = [
 ]
 
 const getCurrentComponent = computed(() => {
-  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets, 'EquipmentOverview': EquipmentOverview, 'TowerMonitoring': TowerMonitoring, 'ElevatorMonitoring': ElevatorMonitoring, 'FormworkMonitoring': FormworkMonitoring, 'FoundationPitMonitoring': FoundationPitMonitoring, 'EquipmentOnOfflineRecord': EquipmentOnOfflineRecord }
+  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets, 'EquipmentOverview': EquipmentOverview, 'TowerMonitoring': TowerMonitoring, 'ElevatorMonitoring': ElevatorMonitoring, 'FormworkMonitoring': FormworkMonitoring, 'FoundationPitMonitoring': FoundationPitMonitoring, 'EquipmentOnOfflineRecord': EquipmentOnOfflineRecord, 'MonitoringAlarmRecord': MonitoringAlarmRecord }
   return map[currentComponent.value] || MainPage
 })
 
@@ -173,6 +175,9 @@ function selectOverview(type) {
   } else if (type === 6) {
     // 设备上下线记录：进入设备上下线记录页（任务6-6）
     currentComponent.value = 'EquipmentOnOfflineRecord'
+  } else if (type === 7) {
+    // 监测报警记录：进入监测报警记录页（任务6-7）
+    currentComponent.value = 'MonitoringAlarmRecord'
   }
 }
 

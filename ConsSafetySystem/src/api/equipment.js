@@ -86,6 +86,49 @@ export function selectOnOffLineData(data) {
 }
 
 /**
+ * 监测报警记录 - 分页查询
+ * POST /monitorPointAlert/selectPage
+ * 入参：{
+ *   page, limit,
+ *   monitorAlertType?  // 设备报警类型 1基坑/2塔机/3升降机/9环境
+ *   startTime?, endTime?,  // LocalDateTime 字符串
+ *   assetName?,        // 设备名（模糊）
+ *   handleState?       // 处理状态 0未处理/1已处理
+ * }
+ * 返回 Result<BPage<MonitorPointAlert>>：
+ *   records: [{ id, content, monitorLog, alertType, monitorAlertType,
+ *               handleState, handleBy, handleMeasures, handleConclu,
+ *               createTime, monitorData, assetName, assetCode,
+ *               locationName, pointName, unit }]
+ *   total / pages
+ * @param {{page:number, limit:number}} data
+ */
+export function selectMonitorAlertData(data) {
+  return request({
+    url: '/monitorPointAlert/selectPage',
+    method: 'post',
+    data,
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
+
+/**
+ * 处理报警信息
+ * POST /monitorPointAlert/update
+ * 入参：{ id, handleBy, handleMeasures, handleConclu }
+ * 后端自动将 handleState 置 1、handleTime 置当前时间，并写入 updateUserId
+ * @param {{id:number, handleBy:string, handleMeasures:string, handleConclu:string}} data
+ */
+export function handleMonitorAlert(data) {
+  return request({
+    url: '/monitorPointAlert/update',
+    method: 'post',
+    data,
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
+
+/**
  * 合并多类设备的报警/预警趋势：数量求和，增长率按合并后总量重新计算。
  */
 function mergeTrend(responses, key) {
