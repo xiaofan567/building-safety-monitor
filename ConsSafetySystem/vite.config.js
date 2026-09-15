@@ -9,7 +9,8 @@ const __dirname = dirname(__filename)
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
-  cacheDir: 'C:/Users/29500/.vite-cache-con',
+  // 使用项目内缓存目录，避免绑定到本机外的绝对路径
+  cacheDir: resolve(__dirname, 'node_modules/.vite'),
 
   resolve: {
     alias: {
@@ -20,7 +21,7 @@ export default defineConfig({
   },
   build: {
     sourcemap: false,
-    outDir: 'C:/Users/29500/con-dist-out',
+    outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
   },
   server: {

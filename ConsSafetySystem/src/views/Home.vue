@@ -23,6 +23,9 @@ import EnvironmentalHistoryData from '@/views/EnvironmentalHistoryData.vue'
 import SprayTask from '@/views/SprayTask.vue'
 import EnvironmentalSprayingRecord from '@/views/EnvironmentalSprayingRecord.vue'
 import EnvironmentAlarmRecord from '@/views/EnvironmentAlarmRecord.vue'
+import VideoSurveillance from '@/views/VideoSurveillance.vue'
+import RiskRecognitionSettings from '@/views/RiskRecognitionSettings.vue'
+import AIRiskRecognition from '@/views/AIRiskRecognition.vue'
 
 const router = useRouter()
 const store = useStore()
@@ -42,9 +45,9 @@ const monitorConfigVisible = ref(false)
 const constructionEnvVisible = ref(false)
 
 const siteOptions = [
-  { label: 'A区 - 主体施工区', value: 'area_a' },
-  { label: 'B区 - 配套施工区', value: 'area_b' },
-  { label: 'C区 - 材料堆放区', value: 'area_c' }
+  { label: '现场监控', value: 'VideoSurveillance' },
+  { label: '风险识别设置', value: 'RiskRecognitionSettings' },
+  { label: 'AI风险识别与处理', value: 'AIRiskRecognition' }
 ]
 
 const equipmentOptions = [
@@ -63,20 +66,29 @@ const menuItems = [
 ]
 
 const getCurrentComponent = computed(() => {
-  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets, 'EquipmentOverview': EquipmentOverview, 'TowerMonitoring': TowerMonitoring, 'ElevatorMonitoring': ElevatorMonitoring, 'FormworkMonitoring': FormworkMonitoring, 'FoundationPitMonitoring': FoundationPitMonitoring, 'EquipmentOnOfflineRecord': EquipmentOnOfflineRecord, 'MonitoringAlarmRecord': MonitoringAlarmRecord }
   const map = {
     MainPage,
     EquipmentType,
     DeviceSimulation,
     EquipmentLocation,
     EquipmentAssets,
+    EquipmentOverview,
+    TowerMonitoring,
+    ElevatorMonitoring,
+    FormworkMonitoring,
+    FoundationPitMonitoring,
+    EquipmentOnOfflineRecord,
+    MonitoringAlarmRecord,
     DeviceMonitoringPointMng,
     EnvironmentMonitoringMng,
     EnvironmentalMonitoring,
     EnvironmentalHistoryData,
     SprayTask,
     EnvironmentalSprayingRecord,
-    EnvironmentAlarmRecord
+    EnvironmentAlarmRecord,
+    VideoSurveillance,
+    RiskRecognitionSettings,
+    AIRiskRecognition
   }
   return map[currentComponent.value] || MainPage
 })
@@ -104,6 +116,13 @@ function handleMenuClick(key) {
   if (item) {
     currentComponent.value = item.comp
   }
+}
+
+// 施工场地下拉导航（现场监控 / 风险识别设置 / AI风险识别与处理）
+function selectConstructionSite(value) {
+  activeMenu.value = 'site'
+  currentComponent.value = value
+  constructionMenuVisible.value = false
 }
 
 async function handleLogout() {
@@ -284,10 +303,6 @@ function selectOverview(type) {
     // 监测报警记录：进入监测报警记录页（任务6-7）
     currentComponent.value = 'MonitoringAlarmRecord'
   }
-function selectDeviceMonitoringPoint() {
-  deviceMenuVisible.value = false
-  activeMenu.value = 'device'
-  currentComponent.value = 'DeviceMonitoringPointMng'
 }
 
 function handleClickOutside(event) {
@@ -407,7 +422,6 @@ onUnmounted(() => {
                 <div class="dropdown-item" @click.stop="selectDeviceType">设备类型管理</div>
                 <div class="dropdown-item" @click.stop="selectEquipmentLocation">设备位置管理</div>
                 <div class="dropdown-item" @click.stop="selectEquipmentAssets">设备管理</div>
-                <div class="dropdown-item" @click.stop="selectDeviceMonitoringPoint">设备监测点管理</div>
               </div>
             </transition>
           </div>
@@ -423,7 +437,7 @@ onUnmounted(() => {
           </button>
           <transition name="dropdown-fade">
             <div class="dropdown-menu" v-show="constructionMenuVisible">
-              <div class="dropdown-item" v-for="opt in siteOptions" :key="opt.value" @click.stop="constructionMenuVisible = false">
+              <div class="dropdown-item" v-for="opt in siteOptions" :key="opt.value" @click.stop="selectConstructionSite(opt.value)">
                 {{ opt.label }}
               </div>
             </div>
