@@ -11,13 +11,20 @@ import EquipmentLocation from '@/views/EquipmentLocation.vue'
 import EquipmentAssets from '@/views/EquipmentAssets.vue'
 import EquipmentOverview from '@/views/EquipmentOverview.vue'
 import TowerMonitoring from '@/views/TowerMonitoring.vue'
+import ElevatorMonitoring from '@/views/ElevatorMonitoring.vue'
+import FormworkMonitoring from '@/views/FormworkMonitoring.vue'
+import FoundationPitMonitoring from '@/views/FoundationPitMonitoring.vue'
+import EquipmentOnOfflineRecord from '@/views/EquipmentOnOfflineRecord.vue'
 
 const router = useRouter()
 const store = useStore()
-const currentComponent = ref('TowerMonitoring')
+const currentComponent = ref('MainPage')
 const activeMenu = ref('dashboard')
 const overviewType = ref(5)
 const towerAssetId = ref(null)
+const liftAssetId = ref(null)
+const formworkAssetId = ref(null)
+const pitAssetId = ref(null)
 
 const constructionMenuVisible = ref(false)
 const equipmentMenuVisible = ref(false)
@@ -33,9 +40,10 @@ const siteOptions = [
 const equipmentOptions = [
   { label: '机械设备总览', value: 5 },
   { label: '塔吊', value: 1 },
-  { label: '升降机', value: 2, disabled: true },
-  { label: '深基坑', value: 3, disabled: true },
-  { label: '高支模', value: 4, disabled: true }
+  { label: '升降机', value: 2 },
+  { label: '高支模', value: 4 },
+  { label: '深基坑', value: 3 },
+  { label: '设备上下线记录', value: 6 }
 ]
 
 const menuItems = [
@@ -48,7 +56,7 @@ const menuItems = [
 ]
 
 const getCurrentComponent = computed(() => {
-  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets, 'EquipmentOverview': EquipmentOverview, 'TowerMonitoring': TowerMonitoring }
+  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets, 'EquipmentOverview': EquipmentOverview, 'TowerMonitoring': TowerMonitoring, 'ElevatorMonitoring': ElevatorMonitoring, 'FormworkMonitoring': FormworkMonitoring, 'FoundationPitMonitoring': FoundationPitMonitoring, 'EquipmentOnOfflineRecord': EquipmentOnOfflineRecord }
   return map[currentComponent.value] || MainPage
 })
 
@@ -56,6 +64,9 @@ const getCurrentComponent = computed(() => {
 const overviewProps = computed(() => {
   if (currentComponent.value === 'EquipmentOverview') return { initialType: overviewType.value }
   if (currentComponent.value === 'TowerMonitoring') return { initialAssetId: towerAssetId.value }
+  if (currentComponent.value === 'ElevatorMonitoring') return { initialAssetId: liftAssetId.value }
+  if (currentComponent.value === 'FormworkMonitoring') return { initialAssetId: formworkAssetId.value }
+  if (currentComponent.value === 'FoundationPitMonitoring') return { initialAssetId: pitAssetId.value }
   return {}
 })
 
@@ -147,6 +158,21 @@ function selectOverview(type) {
     // 塔吊：进入塔机监测分析页（任务6-2）
     towerAssetId.value = null
     currentComponent.value = 'TowerMonitoring'
+  } else if (type === 2) {
+    // 升降机：进入升降机监测分析页（任务6-3）
+    liftAssetId.value = null
+    currentComponent.value = 'ElevatorMonitoring'
+  } else if (type === 4) {
+    // 高支模：进入高支模监测分析页（任务6-4）
+    formworkAssetId.value = null
+    currentComponent.value = 'FormworkMonitoring'
+  } else if (type === 3) {
+    // 深基坑：进入深基坑监测分析页（任务6-5）
+    pitAssetId.value = null
+    currentComponent.value = 'FoundationPitMonitoring'
+  } else if (type === 6) {
+    // 设备上下线记录：进入设备上下线记录页（任务6-6）
+    currentComponent.value = 'EquipmentOnOfflineRecord'
   }
 }
 

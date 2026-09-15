@@ -68,6 +68,24 @@ export async function selectAllEquipData() {
 }
 
 /**
+ * 设备上下线记录 - 分页查询
+ * POST /equipmentOffline/selectPage
+ * 入参：{ page, limit, equipmentId? }
+ * 返回 Result<BPage<EquipmentOffline>>：
+ *   records: [{ id, equipmentId, status(1上线/2离线), monitorTime, equipmentName, assetCode, typeName }]
+ *   total / pages
+ * @param {{page:number, limit:number, equipmentId?:number}} data
+ */
+export function selectOnOffLineData(data) {
+  return request({
+    url: '/equipmentOffline/selectPage',
+    method: 'post',
+    data,
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
+
+/**
  * 合并多类设备的报警/预警趋势：数量求和，增长率按合并后总量重新计算。
  */
 function mergeTrend(responses, key) {
