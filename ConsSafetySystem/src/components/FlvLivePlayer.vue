@@ -78,8 +78,9 @@ function setVideoRef(el, index) {
 }
 
 function getStreamUrl(camera) {
-  if (camera && camera.wvpOpenUrl) return camera.wvpOpenUrl
-  return 'http://localhost:8068/hls/test1/index.m3u8'
+  const hlsBaseUrl = 'http://localhost:8068/hls'
+  if (camera && camera.wvpOpenUrl) return `${hlsBaseUrl}/${camera.wvpOpenUrl}/index.m3u8`
+  return `${hlsBaseUrl}/test1/index.m3u8`
 }
 
 let hlsInstances = []
