@@ -63,7 +63,6 @@ const menuItems = [
 ]
 
 const getCurrentComponent = computed(() => {
-  const map = { 'MainPage': MainPage, 'EquipmentType': EquipmentType, 'DeviceSimulation': DeviceSimulation, 'EquipmentLocation': EquipmentLocation, 'EquipmentAssets': EquipmentAssets, 'EquipmentOverview': EquipmentOverview, 'TowerMonitoring': TowerMonitoring, 'ElevatorMonitoring': ElevatorMonitoring, 'FormworkMonitoring': FormworkMonitoring, 'FoundationPitMonitoring': FoundationPitMonitoring, 'EquipmentOnOfflineRecord': EquipmentOnOfflineRecord, 'MonitoringAlarmRecord': MonitoringAlarmRecord }
   const map = {
     MainPage,
     EquipmentType,
@@ -284,6 +283,8 @@ function selectOverview(type) {
     // 监测报警记录：进入监测报警记录页（任务6-7）
     currentComponent.value = 'MonitoringAlarmRecord'
   }
+}
+
 function selectDeviceMonitoringPoint() {
   deviceMenuVisible.value = false
   activeMenu.value = 'device'
