@@ -4,6 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.qst.smartbuildings.service.CozeChatService;
+import com.qst.smartbuildings.service.SecurityDailyReportService;
+import com.qst.smartbuildings.vo.SecurityDailyReportVo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +60,35 @@ public class CozeChatServiceImpl implements CozeChatService {
 
     @Value("${coze.stream}")
     private boolean stream;
+
+    @Autowired
+    private SecurityDailyReportService securityDailyReportService;
+
+    @Override
+    public boolean executeAndRecord() {
+        String dataContent;
+        try {
+            SecurityDailyReportVo report = securityDailyReportService.getDailyReport();
+            dataContent = "{\"data\":" + JSON.toJSONString(report) + "}";
+        } catch (Exception e) {
+            log.error("获取安全日报数据失败，使用默认空数据: {}", e.getMessage(), e);
+            dataContent = "{\"data\":{}}";
+        }
+
+        long start = System.currentTimeMillis();
+        try {
+            String response = callCozeApi(dataContent);
+            long cost = System.currentTimeMillis() - start;
+            log.info("Coze 定时任务调用完成, 耗时={}ms, 响应长度={}", cost, response == null ? 0 : response.length());
+
+            String messageContent = extractMessageContent(response);
+            log.info("Coze 定时任务解析到响应内容长度={}", messageContent == null ? 0 : messageContent.length());
+            return true;
+        } catch (Exception e) {
+            log.error("Coze 定时任务执行失败, error={}", e.getMessage(), e);
+            return false;
+        }
+    }
 
     @Override
     public String callCozeApi(String dynamicContent) {

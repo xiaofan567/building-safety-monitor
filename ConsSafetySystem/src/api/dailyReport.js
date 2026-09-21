@@ -95,3 +95,85 @@ export function deleteKnowledgeDocuments(params) {
     headers: jsonHeaders
   })
 }
+
+// ==================== 日报模板 API ====================
+
+/**
+ * 获取日��模板（prompt_key = doc_template）
+ * @returns {Promise<Object|null>} 后端返回的 { code, msg, data: { promptText } }，失败返回 null
+ */
+export async function selectTemplateList() {
+  try {
+    const response = await request({
+      url: '/coze/database/getTemplate',
+      method: 'post',
+      data: {},
+      headers: jsonHeaders
+    })
+    return response && response.data ? response.data : null
+  } catch (error) {
+    console.error('获取模板失败:', error)
+    return null
+  }
+}
+
+/**
+ * 更新日报模板
+ * @param {Object} requestData - { promptText: string }
+ * @returns {Promise<Object>} 后端返回结果
+ */
+export async function addTemplate(requestData) {
+  try {
+    const response = await request({
+      url: '/coze/database/updateTemplate',
+      method: 'post',
+      data: requestData,
+      headers: jsonHeaders
+    })
+    return response && response.data ? response.data : null
+  } catch (error) {
+    console.error('更新模板失败:', error)
+    throw error
+  }
+}
+
+// ==================== 日报规则 API ====================
+
+/**
+ * 获取报警规则（prompt_key = rule_template）
+ * @returns {Promise<Object|null>} 后端返回的 { code, msg, data: { promptText } }，失败返回 null
+ */
+export async function selectRuleList() {
+  try {
+    const response = await request({
+      url: '/coze/database/getAlertConfig',
+      method: 'post',
+      data: {},
+      headers: jsonHeaders
+    })
+    return response && response.data ? response.data : null
+  } catch (error) {
+    console.error('获取报警规则失败:', error)
+    return null
+  }
+}
+
+/**
+ * 更新报警规则
+ * @param {Object} requestData - { promptText: string }
+ * @returns {Promise<Object>} 后端返回结果
+ */
+export async function addRule(requestData) {
+  try {
+    const response = await request({
+      url: '/coze/database/updateAlertConfig',
+      method: 'post',
+      data: requestData,
+      headers: jsonHeaders
+    })
+    return response && response.data ? response.data : null
+  } catch (error) {
+    console.error('更新报警规则失败:', error)
+    throw error
+  }
+}
