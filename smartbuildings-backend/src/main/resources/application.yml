@@ -65,3 +65,10 @@ coze:
   stream: ${COZE_STREAM:true}
   conversation:
     url: ${COZE_CONVERSATION_URL:https://api.coze.cn/v1/conversation}
+  knowledge:
+    # 知识库 ID（对应 Coze 知识库页面的 dataset_id）
+    dataset-id: ${COZE_KNOWLEDGE_DATASET_ID:}
+    document:
+      list-url: ${COZE_KNOWLEDGE_LIST_URL:https://api.coze.cn/open_api/knowledge/document/list}
+      create-url: ${COZE_KNOWLEDGE_CREATE_URL:https://api.coze.cn/open_api/knowledge/document/create}
+      delete-url: ${COZE_KNOWLEDGE_DELETE_URL:https://api.coze.cn/open_api/knowledge/document/delete}
