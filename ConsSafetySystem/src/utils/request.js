@@ -30,13 +30,13 @@ const errorMessage = debounce(500, (message, type = 'error') => {
 })
 
 // 4. 防抖确认弹窗：替换 Element UI 的 MessageBox 为 Element Plus 的 ElMessageBox
-const confirmMessage = debounce(1000, async (message) => {
+const confirmMessage = debounce(1000, async (message, confirmText = '确定') => {
   try {
     await ElMessageBox.confirm(
       message,
       '提示',
       {
-        confirmButtonText: '确定',
+        confirmButtonText: confirmText,
         showCancelButton: false,
         type: 'warning'
       }
@@ -148,7 +148,10 @@ service.interceptors.response.use(
     // 网络错误处理（逻辑不变，替换 Element 组件）
     if (error.response) {
       const { status, data } = error.response
-      if (status === 500) {
+      // 401：Token 过期/未登录，弹窗提示并引导重新登录
+      if (status === 401) {
+        confirmMessage('登录已过期，请重新登录', '重新登录')
+      } else if (status === 500) {
         errorMessage('网络错误，请检查您的网络')
       } else if (data?.msg) {
         errorMessage(data.msg)

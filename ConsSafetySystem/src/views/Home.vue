@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
 import { logout } from '@/api/login'
@@ -23,8 +23,12 @@ import EnvironmentalHistoryData from '@/views/EnvironmentalHistoryData.vue'
 import SprayTask from '@/views/SprayTask.vue'
 import EnvironmentalSprayingRecord from '@/views/EnvironmentalSprayingRecord.vue'
 import EnvironmentAlarmRecord from '@/views/EnvironmentAlarmRecord.vue'
+import VideoSurveillance from '@/views/VideoSurveillance.vue'
+import RiskRecognitionSettings from '@/views/RiskRecognitionSettings.vue'
+import AIRiskRecognition from '@/views/AIRiskRecognition.vue'
 
 const router = useRouter()
+const route = useRoute()
 const store = useStore()
 const currentComponent = ref('MainPage')
 const activeMenu = ref('dashboard')
@@ -42,9 +46,9 @@ const monitorConfigVisible = ref(false)
 const constructionEnvVisible = ref(false)
 
 const siteOptions = [
-  { label: 'A区 - 主体施工区', value: 'area_a' },
-  { label: 'B区 - 配套施工区', value: 'area_b' },
-  { label: 'C区 - 材料堆放区', value: 'area_c' }
+  { label: '现场监控', value: 'VideoSurveillance' },
+  { label: '风险识别设置', value: 'RiskRecognitionSettings' },
+  { label: 'AI风险识别与处理', value: 'AIRiskRecognition' }
 ]
 
 const equipmentOptions = [
@@ -62,6 +66,55 @@ const menuItems = [
   { key: 'simulation', label: '设备模拟', icon: 'simulation', comp: 'DeviceSimulation' }
 ]
 
+// 页面组件名 -> 顶部菜单高亮 key 的映射
+const pageMenuMap = {
+  MainPage: 'dashboard',
+  DeviceSimulation: 'simulation',
+  EquipmentOverview: 'equipment',
+  TowerMonitoring: 'equipment',
+  ElevatorMonitoring: 'equipment',
+  FormworkMonitoring: 'equipment',
+  FoundationPitMonitoring: 'equipment',
+  EquipmentOnOfflineRecord: 'equipment',
+  MonitoringAlarmRecord: 'equipment',
+  EquipmentType: 'device',
+  EquipmentLocation: 'device',
+  EquipmentAssets: 'device',
+  DeviceMonitoringPointMng: 'monitorConfig',
+  EnvironmentMonitoringMng: 'monitorConfig',
+  EnvironmentalMonitoring: 'constructionEnv',
+  EnvironmentalHistoryData: 'constructionEnv',
+  SprayTask: 'constructionEnv',
+  EnvironmentalSprayingRecord: 'constructionEnv',
+  EnvironmentAlarmRecord: 'constructionEnv',
+  VideoSurveillance: 'site',
+  RiskRecognitionSettings: 'site',
+  AIRiskRecognition: 'site'
+}
+
+// 统一跳转：把子页面与参数写入 URL query，刷新/直达/前进后退可恢复
+function navigateTo(page, extra = {}) {
+  router.push({ path: '/home', query: { ...route.query, page, ...extra } })
+}
+
+// 从 URL query 恢复子页面与参数
+function restoreStateFromQuery() {
+  const q = route.query
+  currentComponent.value = q.page && q.page !== 'MainPage' ? q.page : 'MainPage'
+  activeMenu.value = pageMenuMap[currentComponent.value] || 'dashboard'
+  if (q.overviewType) overviewType.value = Number(q.overviewType)
+  if (q.assetId) {
+    const assetId = Number(q.assetId)
+    if (currentComponent.value === 'TowerMonitoring') towerAssetId.value = assetId
+    else if (currentComponent.value === 'ElevatorMonitoring') liftAssetId.value = assetId
+    else if (currentComponent.value === 'FormworkMonitoring') formworkAssetId.value = assetId
+    else if (currentComponent.value === 'FoundationPitMonitoring') pitAssetId.value = assetId
+  }
+}
+
+onMounted(restoreStateFromQuery)
+watch(() => route.query, restoreStateFromQuery)
+
 const getCurrentComponent = computed(() => {
   const map = {
     MainPage,
@@ -69,13 +122,23 @@ const getCurrentComponent = computed(() => {
     DeviceSimulation,
     EquipmentLocation,
     EquipmentAssets,
+    EquipmentOverview,
+    TowerMonitoring,
+    ElevatorMonitoring,
+    FormworkMonitoring,
+    FoundationPitMonitoring,
+    EquipmentOnOfflineRecord,
+    MonitoringAlarmRecord,
     DeviceMonitoringPointMng,
     EnvironmentMonitoringMng,
     EnvironmentalMonitoring,
     EnvironmentalHistoryData,
     SprayTask,
     EnvironmentalSprayingRecord,
-    EnvironmentAlarmRecord
+    EnvironmentAlarmRecord,
+    VideoSurveillance,
+    RiskRecognitionSettings,
+    AIRiskRecognition
   }
   return map[currentComponent.value] || MainPage
 })
@@ -94,15 +157,20 @@ const overviewProps = computed(() => {
 function openTowerMonitor(payload) {
   towerAssetId.value = payload ? Number(payload.assetId) : null
   activeMenu.value = 'equipment'
-  currentComponent.value = 'TowerMonitoring'
+  navigateTo('TowerMonitoring', payload ? { assetId: Number(payload.assetId) } : {})
 }
 
 function handleMenuClick(key) {
-  activeMenu.value = key
   const item = menuItems.find(m => m.key === key)
   if (item) {
-    currentComponent.value = item.comp
+    navigateTo(item.comp)
   }
+}
+
+// 施工场地下拉导航（现场监控 / 风险识别设置 / AI风险识别与处理）
+function selectConstructionSite(value) {
+  constructionMenuVisible.value = false
+  navigateTo(value)
 }
 
 async function handleLogout() {
@@ -185,71 +253,61 @@ function toggleConstructionEnvMenu() {
 // 监测配置下拉 - 选择“设备监测点管理”
 function selectMonitorPointMng() {
   monitorConfigVisible.value = false
-  activeMenu.value = 'monitorConfig'
-  currentComponent.value = 'DeviceMonitoringPointMng'
+  navigateTo('DeviceMonitoringPointMng')
 }
 
 // 监测配置下拉 - 选择“环境监测管理”
 function selectEnvironmentMng() {
   monitorConfigVisible.value = false
-  activeMenu.value = 'monitorConfig'
-  currentComponent.value = 'EnvironmentMonitoringMng'
+  navigateTo('EnvironmentMonitoringMng')
 }
 
 // 施工环境下拉 - 选择“环境实时监测”
 function selectEnvironmentalMonitoring() {
   constructionEnvVisible.value = false
-  activeMenu.value = 'constructionEnv'
-  currentComponent.value = 'EnvironmentalMonitoring'
+  navigateTo('EnvironmentalMonitoring')
 }
 
 // 施工环境下拉 - 选择“环境监测历史数据”
 function selectEnvironmentalHistoryData() {
   constructionEnvVisible.value = false
-  activeMenu.value = 'constructionEnv'
-  currentComponent.value = 'EnvironmentalHistoryData'
+  navigateTo('EnvironmentalHistoryData')
 }
 
 // 施工环境下拉 - 选择“喷淋任务”
 function selectSprayTask() {
   constructionEnvVisible.value = false
-  activeMenu.value = 'constructionEnv'
-  currentComponent.value = 'SprayTask'
+  navigateTo('SprayTask')
 }
 
 // 施工环境下拉 - 选择“自动喷淋记录”
 function selectAutoSprayRecord() {
   constructionEnvVisible.value = false
-  activeMenu.value = 'constructionEnv'
-  currentComponent.value = 'EnvironmentalSprayingRecord'
+  navigateTo('EnvironmentalSprayingRecord')
 }
 
 // 施工环境下拉 - 选择“环境监测报警记录”
 function selectEnvironmentAlarmRecord() {
   constructionEnvVisible.value = false
-  activeMenu.value = 'constructionEnv'
-  currentComponent.value = 'EnvironmentAlarmRecord'
+  navigateTo('EnvironmentAlarmRecord')
 }
 
 // 设备管理下拉 - 选择“设备类型管理”
 function selectDeviceType() {
   deviceMenuVisible.value = false
-  activeMenu.value = 'device'
-  currentComponent.value = 'EquipmentType'
+  navigateTo('EquipmentType')
 }
 
 // 设备管理下拉 - 选择“设备位置管理”
 function selectEquipmentLocation() {
   deviceMenuVisible.value = false
-  activeMenu.value = 'device'
-  currentComponent.value = 'EquipmentLocation'
+  navigateTo('EquipmentLocation')
 }
 
 // 设备管理下拉 - 选择“设备管理”
 function selectEquipmentAssets() {
   deviceMenuVisible.value = false
-  activeMenu.value = 'device'
-  currentComponent.value = 'EquipmentAssets'
+  navigateTo('EquipmentAssets')
 }
 
 // 施工设备下拉 - 选择设备查看入口
@@ -259,29 +317,29 @@ function selectOverview(type) {
   if (type === 5) {
     // 机械设备总览：保持总览页不变
     overviewType.value = 5
-    currentComponent.value = 'EquipmentOverview'
+    navigateTo('EquipmentOverview', { overviewType: 5 })
   } else if (type === 1) {
     // 塔吊：进入塔机监测分析页（任务6-2）
     towerAssetId.value = null
-    currentComponent.value = 'TowerMonitoring'
+    navigateTo('TowerMonitoring')
   } else if (type === 2) {
     // 升降机：进入升降机监测分析页（任务6-3）
     liftAssetId.value = null
-    currentComponent.value = 'ElevatorMonitoring'
+    navigateTo('ElevatorMonitoring')
   } else if (type === 4) {
     // 高支模：进入高支模监测分析页（任务6-4）
     formworkAssetId.value = null
-    currentComponent.value = 'FormworkMonitoring'
+    navigateTo('FormworkMonitoring')
   } else if (type === 3) {
     // 深基坑：进入深基坑监测分析页（任务6-5）
     pitAssetId.value = null
-    currentComponent.value = 'FoundationPitMonitoring'
+    navigateTo('FoundationPitMonitoring')
   } else if (type === 6) {
     // 设备上下线记录：进入设备上下线记录页（任务6-6）
-    currentComponent.value = 'EquipmentOnOfflineRecord'
+    navigateTo('EquipmentOnOfflineRecord')
   } else if (type === 7) {
     // 监测报警记录：进入监测报警记录页（任务6-7）
-    currentComponent.value = 'MonitoringAlarmRecord'
+    navigateTo('MonitoringAlarmRecord')
   }
 }
 
@@ -408,7 +466,6 @@ onUnmounted(() => {
                 <div class="dropdown-item" @click.stop="selectDeviceType">设备类型管理</div>
                 <div class="dropdown-item" @click.stop="selectEquipmentLocation">设备位置管理</div>
                 <div class="dropdown-item" @click.stop="selectEquipmentAssets">设备管理</div>
-                <div class="dropdown-item" @click.stop="selectDeviceMonitoringPoint">设备监测点管理</div>
               </div>
             </transition>
           </div>
@@ -424,7 +481,7 @@ onUnmounted(() => {
           </button>
           <transition name="dropdown-fade">
             <div class="dropdown-menu" v-show="constructionMenuVisible">
-              <div class="dropdown-item" v-for="opt in siteOptions" :key="opt.value" @click.stop="constructionMenuVisible = false">
+              <div class="dropdown-item" v-for="opt in siteOptions" :key="opt.value" @click.stop="selectConstructionSite(opt.value)">
                 {{ opt.label }}
               </div>
             </div>

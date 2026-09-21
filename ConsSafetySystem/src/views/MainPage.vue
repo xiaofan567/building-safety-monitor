@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import { getDashboardData } from '@/api/dashboard'
 
@@ -38,14 +38,59 @@ const chartColors = {
   textNormal: '#6b5f4f'
 }
 
+// 环境实时数据卡片配置：realTimeList 中按 monitorPointCode 取最新值
+const envMeta = [
+  { code: 'temp', label: '温度', unit: '°C', color: '#f5a623' },
+  { code: 'humi', label: '湿度', unit: '%', color: '#1a73e8' },
+  { code: 'windSpeed', label: '风速', unit: 'm/s', color: '#0ea5e9' },
+  { code: 'noise', label: '噪音', unit: 'dB', color: '#e54545' },
+  { code: 'pm25', label: 'PM2.5', unit: 'μg/m³', color: '#8b5cf6' },
+  { code: 'tsp', label: '粉尘', unit: 'mg/m³', color: '#0d9e6c' }
+]
+// 把 realTimeList 转成 code -> value 的映射
+function realTimeMap() {
+  const map = {}
+  ;(envData.value || []).forEach(it => {
+    if (it.monitorPointCode) map[it.monitorPointCode] = it.value
+  })
+  return map
+}
+const envItems = computed(() => {
+  const map = realTimeMap()
+  return envMeta.map(m => ({
+    code: m.code,
+    label: m.label,
+    unit: m.unit,
+    color: m.color,
+    display: map[m.code] !== undefined && map[m.code] !== null ? Number(map[m.code]) : null
+  }))
+})
+
+// 报警类型展示（监测点/塔吊/升降机）
+const alertTypeLabel = (t) =>
+  ({ '1': '监测点', '2': '塔吊', '3': '升降机' }[String(t)] || '--')
+
+// 喷淋运行状态（spraySystemList.operationType：0 关闭 1 开启 2 操作异常）
+const sprayStatus = (op) =>
+  ({ '0': '已关闭', '1': '开启', '2': '操作异常' }[String(op)] || '--')
+const sprayTagClass = (op) => {
+  const o = String(op)
+  if (o === '2') return 'tag-orange'
+  if (o === '0') return 'tag-red'
+  return 'tag-green'
+}
+
 function initEnvChart() {
   if (!envChartRef.value) return
   if (envChartInstance) envChartInstance.dispose()
   envChartInstance = echarts.init(envChartRef.value)
 
+  const map = realTimeMap()
+  const tempVal = map.temp !== undefined ? Number(map.temp) : null
+  const humiVal = map.humi !== undefined ? Number(map.humi) : null
   const hours = ['00:00','02:00','04:00','06:00','08:00','10:00','12:00','14:00','16:00','18:00','20:00','22:00']
-  const tempData = [18, 17, 16, 15, 16, 19, 22, 25, 26, 24, 21, 19]
-  const humData = [65, 68, 72, 75, 72, 62, 55, 50, 48, 52, 58, 62]
+  const tempData = hours.map((h, i) => (i === 11 ? tempVal : null))
+  const humData = hours.map((h, i) => (i === 11 ? humiVal : null))
 
   envChartInstance.setOption({
     tooltip: {
@@ -175,8 +220,16 @@ function initSprinklerChart() {
   if (sprinklerChartInstance) sprinklerChartInstance.dispose()
   sprinklerChartInstance = echarts.init(sprinklerChartRef.value)
 
-  const days = ['周一','周二','周三','周四','周五','周六','周日']
-  const sprayData = [120, 145, 98, 132, 155, 80, 60]
+  // 喷淋操作统计：按日期聚合最近喷淋记录（spraySystemList）的操作次数
+  const list = Array.isArray(sprinklerRecords.value) ? sprinklerRecords.value : []
+  const countByDate = {}
+  list.forEach(it => {
+    const dt = (it.operationTime || '').replace('T', ' ').slice(0, 10)
+    if (dt) countByDate[dt] = (countByDate[dt] || 0) + 1
+  })
+  const dates = Object.keys(countByDate).sort()
+  const days = dates.length ? dates : ['近期']
+  const sprayData = dates.length ? dates.map(d => countByDate[d]) : [0]
 
   sprinklerChartInstance.setOption({
     tooltip: {
@@ -195,7 +248,7 @@ function initSprinklerChart() {
     },
     yAxis: {
       type: 'value',
-      name: '喷淋量(L)',
+      name: '操作次数',
       nameTextStyle: { color: chartColors.textDim, fontSize: 10 },
       splitLine: { lineStyle: { color: chartColors.gridLine, type: 'dashed' } },
       axisLabel: { color: chartColors.textDim, fontSize: 10 }
@@ -503,34 +556,12 @@ const goToDailyReport = () => {
             <span class="panel-link">查看详情 →</span>
           </div>
           <div class="env-grid">
-            <div class="env-item">
-              <div class="env-val" style="color:#f5a623">26<span class="env-unit">°C</span></div>
-              <div class="env-label">温度</div>
-              <div class="env-status normal">正常</div>
-            </div>
-            <div class="env-item">
-              <div class="env-val" style="color:#1a73e8">55<span class="env-unit">%</span></div>
-              <div class="env-label">湿度</div>
-              <div class="env-status normal">正常</div>
-            </div>
-            <div class="env-item">
-              <div class="env-val" style="color:#0ea5e9">3.2<span class="env-unit">m/s</span></div>
-              <div class="env-label">风速</div>
-              <div class="env-status normal">正常</div>
-            </div>
-            <div class="env-item env-warn">
-              <div class="env-val" style="color:#e54545">85<span class="env-unit">dB</span></div>
-              <div class="env-label">噪音</div>
-              <div class="env-status warn">超标</div>
-            </div>
-            <div class="env-item">
-              <div class="env-val" style="color:#8b5cf6">42<span class="env-unit">μg/m³</span></div>
-              <div class="env-label">PM2.5</div>
-              <div class="env-status normal">正常</div>
-            </div>
-            <div class="env-item">
-              <div class="env-val" style="color:#0d9e6c">0.8<span class="env-unit">mg/m³</span></div>
-              <div class="env-label">粉尘</div>
+            <div class="env-item" v-for="item in envItems" :key="item.code">
+              <div class="env-val" :style="{ color: item.color }">
+                {{ item.display !== null ? item.display : '--' }}
+                <span class="env-unit" v-if="item.display !== null">{{ item.unit }}</span>
+              </div>
+              <div class="env-label">{{ item.label }}</div>
               <div class="env-status normal">正常</div>
             </div>
           </div>
@@ -561,12 +592,12 @@ const goToDailyReport = () => {
               </thead>
               <tbody>
                 <tr v-for="item in alarmList.slice(0, 5)" :key="item.id">
-                  <td>{{ item.alertTime || item.createTime || '--' }}</td>
-                  <td>{{ item.alertType || '--' }}</td>
-                  <td>{{ item.alertContent || item.content || '--' }}</td>
+                  <td>{{ (item.createTime || '').replace('T', ' ').slice(0, 19) || '--' }}</td>
+                  <td>{{ alertTypeLabel(item.monitorAlertType) }}</td>
+                  <td>{{ item.content || '--' }}</td>
                   <td>
-                    <span class="tag" :class="item.alertStatus === '1' || item.handleState === '0' ? 'tag-red' : 'tag-green'">
-                      {{ item.alertStatus === '1' || item.handleState === '0' ? '未处理' : '已处理' }}
+                    <span class="tag" :class="item.handleState === '0' ? 'tag-red' : 'tag-green'">
+                      {{ item.handleState === '0' ? '未处理' : '已处理' }}
                     </span>
                   </td>
                 </tr>
@@ -617,13 +648,13 @@ const goToDailyReport = () => {
               </thead>
               <tbody>
                 <tr v-for="(item, idx) in sprinklerRecords" :key="item.id || idx">
-                  <td>{{ item.asset_location || item.point_name || '--' }}</td>
-                  <td>{{ item.asset_name || item.monitor_point_id || '--' }}</td>
-                  <td>{{ item.operation_type === '1' ? '运行中' : (item.operation_type === '0' ? '已关闭' : '--') }}</td>
-                  <td>{{ (item.operation_time || '').replace('T', ' ').slice(0, 19) || '--' }}</td>
+                  <td>{{ item.assetLocation || item.pointName || '--' }}</td>
+                  <td>{{ item.assetName || item.assetCode || '--' }}</td>
+                  <td>{{ sprayStatus(item.operationType) }}</td>
+                  <td>{{ (item.operationTime || '').replace('T', ' ').slice(0, 19) || '--' }}</td>
                   <td>
-                    <span class="tag" :class="item.operation_type === '0' ? 'tag-red' : 'tag-green'">
-                      {{ item.operation_type === '0' ? '关闭' : (item.operation_type === '1' ? '正常' : '--') }}
+                    <span class="tag" :class="sprayTagClass(item.operationType)">
+                      {{ sprayStatus(item.operationType) }}
                     </span>
                   </td>
                 </tr>
@@ -637,7 +668,7 @@ const goToDailyReport = () => {
 
         <div class="panel">
           <div class="panel-header">
-            <div class="panel-title">周喷淋量统计</div>
+            <div class="panel-title">喷淋操作统计</div>
             <span class="panel-link">查看详情 →</span>
           </div>
           <div ref="sprinklerChartRef" class="chart-container chart-sm"></div>
