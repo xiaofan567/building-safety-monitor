@@ -343,6 +343,12 @@ function selectOverview(type) {
   }
 }
 
+function selectDeviceMonitoringPoint() {
+  deviceMenuVisible.value = false
+  activeMenu.value = 'device'
+  currentComponent.value = 'DeviceMonitoringPointMng'
+}
+
 function handleClickOutside(event) {
   const constructionEl = document.querySelector('.nav-dropdown-construction')
   const equipmentEl = document.querySelector('.nav-dropdown-equipment')
