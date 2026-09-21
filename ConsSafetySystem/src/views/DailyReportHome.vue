@@ -58,6 +58,8 @@
       <section class="daily-content">
         <DailyReportAssistant v-if="activeMenu === 'assistant'" />
         <DailyReportKnowledgeBase v-else-if="activeMenu === 'knowledge'" />
+        <DailyReportTemplateMng v-else-if="activeMenu === 'template'" />
+        <DailyReportRuleMng v-else-if="activeMenu === 'rule'" />
         <TaskPlaceholder
           v-else
           breadcrumb-root="智能日报"
@@ -73,6 +75,8 @@
 import { computed, ref } from 'vue'
 import DailyReportAssistant from './DailyReportAssistant.vue'
 import DailyReportKnowledgeBase from './DailyReportKnowledgeBase.vue'
+import DailyReportTemplateMng from './DailyReportTemplateMng.vue'
+import DailyReportRuleMng from './DailyReportRuleMng.vue'
 import TaskPlaceholder from './TaskPlaceholder.vue'
 
 const activeMenu = ref('assistant')

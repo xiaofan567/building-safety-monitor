@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qst.smartbuildings.mapper.EquipmentAssetsMapper">
+
+    <select id="getBuildAssetCount" resultType="java.util.Map">
+        select
+            t.type_id as typeId,
+            t.type_name as typeName,
+            count(a.asset_id) as totalEquipment,
+            sum(case when a.offline_status = '1' then 1 else 0 end) as onlineEquipment
+        from equipment_type t
+        left join equipment_assets a on a.type_id = t.type_id and a.status = '1'
+        where t.type_id in (145, 115, 147, 148)
+        group by t.type_id, t.type_name
+        order by t.type_id
+    </select>
+
+</mapper>
