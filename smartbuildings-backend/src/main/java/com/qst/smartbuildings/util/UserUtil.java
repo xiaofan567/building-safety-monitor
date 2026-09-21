@@ -16,9 +16,33 @@ public class UserUtil {
             return null;
         }
         Object principal = authentication.getPrincipal();
+        if (principal instanceof Number number) {
+            return number.longValue();
+        }
+        if (principal instanceof CharSequence sequence && sequence.length() > 0) {
+            try {
+                return Long.parseLong(sequence.toString());
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        if (principal instanceof java.util.Map<?, ?> map) {
+            Object id = map.get("userId");
+            if (id instanceof Number number) {
+                return number.longValue();
+            }
+            if (id != null) {
+                try {
+                    return Long.parseLong(id.toString());
+                } catch (NumberFormatException ignored) {
+                    return null;
+                }
+            }
+        }
         if (principal instanceof AdminUser) {
             return ((AdminUser) principal).getUserId();
         }
         return null;
     }
 }
+

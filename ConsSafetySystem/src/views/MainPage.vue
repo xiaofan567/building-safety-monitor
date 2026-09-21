@@ -483,6 +483,12 @@ onUnmounted(() => {
   deviceOverviewChartInstance?.dispose()
   deviceStatsChartInstance?.dispose()
 })
+
+const goToDailyReport = () => {
+  const base = `${window.location.origin}${import.meta.env.BASE_URL || '/'}`
+  const url = `${base.replace(/\/$/, '')}/daily-report`
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
 </script>
 
 <template>
@@ -676,6 +682,18 @@ onUnmounted(() => {
           <div ref="deviceStatsChartRef" class="chart-container chart-sm"></div>
         </div>
       </div>
+    </div>
+    <div class="ai-assistant-entry">
+      <button class="ai-assistant-fab" type="button" title="智能监测助手" @click="goToDailyReport">
+        <span class="ai-fab-glow"></span>
+        <span class="ai-fab-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+            <rect x="4" y="6" width="16" height="12" rx="3" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M9 11h.01M12 11h.01M15 11h.01M9 15h6M12 3v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="ai-fab-label">智能监测助手</span>
+      </button>
     </div>
   </div>
 </template>
@@ -1044,5 +1062,69 @@ onUnmounted(() => {
 .tag-blue {
   background: var(--info-tint);
   color: var(--info);
+}
+.ai-assistant-entry {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 80;
+}
+
+.ai-assistant-fab {
+  position: relative;
+  display: flex;
+  min-width: 52px;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 10px 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 17px;
+  background: var(--primary-grad);
+  box-shadow: 0 12px 28px rgba(120, 86, 43, 0.28);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.ai-assistant-fab:hover {
+  box-shadow: 0 16px 32px rgba(120, 86, 43, 0.34);
+  transform: translateY(-3px) scale(1.02);
+}
+
+.ai-fab-glow {
+  position: absolute;
+  top: -22px;
+  right: -22px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  filter: blur(1px);
+}
+
+.ai-fab-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-fab-label {
+  position: relative;
+  color: #fff;
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  writing-mode: vertical-rl;
+}
+
+@media (max-width: 900px) {
+  .ai-assistant-entry {
+    right: 16px;
+    bottom: 16px;
+  }
 }
 </style>

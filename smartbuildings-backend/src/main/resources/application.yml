@@ -52,3 +52,16 @@ camera:
 tower:
   ai:
     baseUrl: http://localhost:5000/crane_safety
+# Coze 智能监测助手配置
+coze:
+  api:
+    url: ${COZE_API_URL:https://api.coze.cn/v3/chat}
+    key: ${COZE_API_KEY:}
+  bot:
+    id: ${COZE_BOT_ID:}
+  user:
+    id: ${COZE_USER_ID:admin}
+  auto-save-history: ${COZE_AUTO_SAVE_HISTORY:false}
+  stream: ${COZE_STREAM:true}
+  conversation:
+    url: ${COZE_CONVERSATION_URL:https://api.coze.cn/v1/conversation}
