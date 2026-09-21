@@ -57,6 +57,7 @@
 
       <section class="daily-content">
         <DailyReportAssistant v-if="activeMenu === 'assistant'" />
+        <DailyReportKnowledgeBase v-else-if="activeMenu === 'knowledge'" />
         <TaskPlaceholder
           v-else
           breadcrumb-root="智能日报"
@@ -71,6 +72,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import DailyReportAssistant from './DailyReportAssistant.vue'
+import DailyReportKnowledgeBase from './DailyReportKnowledgeBase.vue'
 import TaskPlaceholder from './TaskPlaceholder.vue'
 
 const activeMenu = ref('assistant')
@@ -112,7 +114,6 @@ const breadcrumbLabels = {
 }
 
 const placeholderDescriptions = {
-  knowledge: '维护智能日报生成所需的知识库资料，模块将在后续任务中继续完善。',
   template: '配置日报模板结构与展示字段，模块将在后续任务中继续完善。',
   rule: '配置日报生成、汇总和推送规则，模块将在后续任务中继续完善。',
   list: '查看已生成的历史日报与导出记录，模块将在后续任务中继续完善。'

@@ -51,3 +51,47 @@ export function chatInConversation(conversationId, message) {
     headers: jsonHeaders
   })
 }
+
+// ==================== 知识库文档 API ====================
+
+/**
+ * 查询知识库文档列表
+ * @param {Object} params - { page, size }
+ * @returns {Promise<Object>} { code, msg, data: { documents, total } }
+ */
+export function selectKnowledgeDocuments(params) {
+  return request({
+    url: '/coze/knowledge/document/list',
+    method: 'post',
+    data: params || {},
+    headers: jsonHeaders
+  })
+}
+
+/**
+ * 上传文件到知识库
+ * @param {Object} params - { name, fileBase64, fileType, formatType, chunkType }
+ * @returns {Promise<Object>} { code, msg, data: { documentInfos } }
+ */
+export function createKnowledgeDocument(params) {
+  return request({
+    url: '/coze/knowledge/document/create',
+    method: 'post',
+    data: params,
+    headers: jsonHeaders
+  })
+}
+
+/**
+ * 删除知识库文档
+ * @param {Object} params - { documentIds: string[] }
+ * @returns {Promise<Object>} { code, msg, data: { deletedCount } }
+ */
+export function deleteKnowledgeDocuments(params) {
+  return request({
+    url: '/coze/knowledge/document/delete',
+    method: 'post',
+    data: params,
+    headers: jsonHeaders
+  })
+}
