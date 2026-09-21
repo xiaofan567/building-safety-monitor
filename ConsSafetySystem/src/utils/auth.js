@@ -9,6 +9,8 @@ export function removeAuth() {
     cache.rmAxiosCache()
     store.commit('SET_ALLAUTH', null)
     delete axios.defaults.headers['Admin-Token']
+    // 请求拦截器从 localStorage.token 读取并注入请求头，必须一并清除，否则刷新后仍携带过期 token 导致 401 循环弹窗
+    localStorage.removeItem('token')
     resolve(true)
   })
 }
