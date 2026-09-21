@@ -189,3 +189,22 @@ export async function deleteSprayTask(id) {
   })
   return response?.data ?? {}
 }
+
+export async function selectEnvAlarmRecord(data) {
+  const response = await request({
+    url: '/monitorPointAlert/selectPage',
+    method: 'post',
+    data,
+    headers: { 'Content-Type': 'application/json;charset=UTF-8' }
+  })
+  return response?.data ?? {}
+}
+
+export function updHandleData(data) {
+  return request({
+    url: '/monitorPointAlert/update',
+    method: 'post',
+    data,
+    headers: { 'Content-Type': 'application/json;charset=UTF-8' }
+  })
+}
