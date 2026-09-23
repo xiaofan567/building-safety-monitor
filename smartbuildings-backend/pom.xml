@@ -90,6 +90,13 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- 使用本机已缓存的 junit-platform-launcher 版本（离线测试环境需要，默认 1.10.3 未缓存） -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
         <!-- Hutool 工具包 -->
         <dependency>
             <groupId>cn.hutool</groupId>
@@ -187,4 +194,19 @@
 <!--            </plugin>-->
 <!--        </plugins>-->
 <!--    </build>-->
+    <profiles>
+        <!-- 使用本机已完整缓存的 surefire 版本，避免因 3.5.4 缺 surefire-common 依赖导致测试无法运行 -->
+        <profile>
+            <id>offline-surefire</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>3.5.5</version>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
