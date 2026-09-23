@@ -3,7 +3,7 @@ package com.qst.smartbuildings.service;
 /**
  * Coze 知识库（Database）相关业务接口。
  *
- * <p>用于管理日报模板与报警规则提示词数据，提供按 prompt_key 的查询与更新能力。</p>
+ * <p>用于管理日报模板与报警规则提示词数据，以及定时同步 Coze 平台生成的报告文档。</p>
  */
 public interface CozeDatabaseService {
 
@@ -32,9 +32,17 @@ public interface CozeDatabaseService {
     String updateAlertConfig(String promptText);
 
     /**
-     * 同步 Coze 知识库文档（占位实现，子任务继续完善）。
+     * 同步 Coze 知识库（第二个数据库 safe_report_list）中的报告文档到本地。
      *
-     * @return 同步结果描述
+     * <p>流程：
+     * <ol>
+     *     <li>查询 Coze 知识库获取所有文档记录（doc_id, doc_name, bstudio_create_time, doc_url）；</li>
+     *     <li>对比本地数据库已有的 doc_id，只处理新增的文档；</li>
+     *     <li>下载 doc_url 文件到本地存储目录；</li>
+     *     <li>将记录写入本地数据库，doc_url 替换为本地相对路径。</li>
+     * </ol>
+     *
+     * @return 同步结果描述（含 总数 / 新增 / 跳过 / 失败 统计）
      */
     String syncDocuments();
 }

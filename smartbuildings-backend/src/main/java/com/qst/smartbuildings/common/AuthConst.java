@@ -15,8 +15,10 @@ public class AuthConst {
     public static final String[] OPEN_URLS = new String[]{
             "/login",          // 登录接口
             "/relogin",        // 重新登录接口
+            "/logout",         // 登出接口
             "/captcha",        // 验证码接口（如果有）
             "/api/public/**",   // 其他公开接口（支持通配符）
-            "/ai_image/**"     // AI图片接口
+            "/ai_image/**",    // AI图片接口
+            "/doc-files/**"    // 文档同步文件（支持通配符）
     };
 }
