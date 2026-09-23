@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * 任务流程：
  * <ol>
  *     <li>调用 {@link CozeChatService#executeAndRecord()} 生成日报数据并推送 Coze 智能体；</li>
- *     <li>执行成功后延迟 3 分钟异步触发文档同步。</li>
+ *     <li>执行成功后延迟 5 分钟异步触发文档同步（Coze 数据处理约需 3 分钟，留出缓冲）。</li>
  * </ol>
  * 可通过 {@code coze.scheduler.enabled=false} 关闭定时任务。</p>
  */
@@ -57,7 +57,7 @@ public class CozeScheduledTask {
         }
         log.info("Coze 定时任务执行{}", success ? "成功" : "失败");
 
-        // 执行成功后，延迟 3 分钟自动同步文档
+        // 执行成功后，延迟 5 分钟自动同步文档（Coze 数据处理约需 3 分钟）
         if (success) {
             delayExecutor.schedule(() -> {
                 try {
@@ -67,7 +67,7 @@ public class CozeScheduledTask {
                 } catch (Exception e) {
                     log.error("Coze 定时任务: 延迟同步文档失败: {}", e.getMessage(), e);
                 }
-            }, 3, TimeUnit.MINUTES);
+            }, 5, TimeUnit.MINUTES);
         }
     }
 

@@ -60,6 +60,7 @@
         <DailyReportKnowledgeBase v-else-if="activeMenu === 'knowledge'" />
         <DailyReportTemplateMng v-else-if="activeMenu === 'template'" />
         <DailyReportRuleMng v-else-if="activeMenu === 'rule'" />
+        <DailyReportList v-else-if="activeMenu === 'list'" />
         <TaskPlaceholder
           v-else
           breadcrumb-root="智能日报"
@@ -77,6 +78,7 @@ import DailyReportAssistant from './DailyReportAssistant.vue'
 import DailyReportKnowledgeBase from './DailyReportKnowledgeBase.vue'
 import DailyReportTemplateMng from './DailyReportTemplateMng.vue'
 import DailyReportRuleMng from './DailyReportRuleMng.vue'
+import DailyReportList from './DailyReportList.vue'
 import TaskPlaceholder from './TaskPlaceholder.vue'
 
 const activeMenu = ref('assistant')
@@ -105,7 +107,7 @@ const menuItems = [
   {
     key: 'list',
     label: '日报查看',
-    icon: '<svg viewBox="0 0 24 24" fill="none" width="19" height="19"><path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>'
+    icon: '<svg viewBox="0 0 24 24" fill="none" width="19" height="19"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
   }
 ]
 
@@ -117,11 +119,7 @@ const breadcrumbLabels = {
   list: '日报查看'
 }
 
-const placeholderDescriptions = {
-  template: '配置日报模板结构与展示字段，模块将在后续任务中继续完善。',
-  rule: '配置日报生成、汇总和推送规则，模块将在后续任务中继续完善。',
-  list: '查看已生成的历史日报与导出记录，模块将在后续任务中继续完善。'
-}
+const placeholderDescriptions = {}
 
 const currentBreadcrumb = computed(() => breadcrumbLabels[activeMenu.value] || '智能日报')
 </script>

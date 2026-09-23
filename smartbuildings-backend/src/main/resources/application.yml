@@ -76,6 +76,12 @@ coze:
   database:
     id: ${COZE_DATABASE_ID:}
     url: ${COZE_DATABASE_URL:https://api.coze.cn/v1/databases}
+  # 第二个 Coze 知识库（报告文档库 safe_report_list）
+  database2:
+    id: ${COZE_DATABASE2_ID:}
+  # Coze 同步报告文档的本地存储路径（相对项目根目录）
+  document:
+    storage-path: ${COZE_DOCUMENT_STORAGE_PATH:./doc-files/}
   # 定时任务配置：每日 20:00 触发日报生成
   cron: ${COZE_CRON:0 0 20 * * ?}
   scheduler:
