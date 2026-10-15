@@ -24,3 +24,5 @@ application-env.yml
 
 # IDE 本地工具配置
 .trae/
+# Claude Code 本地会话配置（含个人偏好、token 等，不应入仓）
+.claude/
